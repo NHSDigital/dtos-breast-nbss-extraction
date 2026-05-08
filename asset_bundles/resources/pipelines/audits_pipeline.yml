@@ -1,0 +1,15 @@
+resources:
+  pipelines:
+    audits_pipeline:
+      name: audits-ingestion-pipeline
+      catalog: ${var.catalog}
+      target: ${var.bronze_schema}
+      serverless: true
+      libraries:
+        - file:
+            path: ../../src/pipelines/audits_pipeline.py
+      configuration:
+        pipeline.bronze_schema: ${var.bronze_schema}
+        pipeline.silver_schema: ${var.silver_schema}
+        pipeline.gold_schema: ${var.gold_schema}
+      channel: CURRENT
