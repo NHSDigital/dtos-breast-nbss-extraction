@@ -89,7 +89,7 @@ def episodes_by_patient():
         dlt.read(f"{SILVER_SCHEMA}.audit_episodes")
         .groupBy("nhs_number")
         .agg({"nhs_number": "count"})
-        .withColumnRenamed("count(nhs_number)", "patient_count")
+        .withColumnRenamed("count(nhs_number)", "episode_count")
     )
 
 
