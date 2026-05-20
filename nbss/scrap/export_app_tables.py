@@ -50,7 +50,7 @@ def main():
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    # loop through tables, fetch data, export to .csv 
+    # loop through tables, fetch data, export to .csv
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     print("\nFetching data from tables\n")
