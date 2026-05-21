@@ -4,22 +4,21 @@ Connects to InterSystems Cache via ODBC (DSN=NBSS_64), fetches the first 5 table
 loads each into a pandas DataFrame and exports to CSV.
 
 """
-
 import pyodbc
 import pandas as pd
 from datetime import datetime
+from dotenv import load_dotenv
 import os
 import sys
 
 # variables
-DSN        = "NBSS_64"
-UID        = "_SYSTEM"
-PWD        = "SYS"
-SCHEMA     = "APP"
-TOP_N      = 5
+load_dotenv()
+DSN        = os.getenv("DSN")
+UID        = os.getenv("UID")
+PWD        = os.getenv("PWD")
+SCHEMA     = "APP" # feel free to change this to target a different schema
 OUTPUT_DIR = "extracts"
 CHUNK_SIZE = 10000
-
 
 def main():
 
@@ -36,7 +35,7 @@ def main():
     # get first 5 tables from APP schema
     # feel to change query to pick up more tables or filter differently
     cursor.execute(f"""
-        SELECT TOP {TOP_N} TABLE_SCHEMA, TABLE_NAME
+        SELECT TOP 5 TABLE_SCHEMA, TABLE_NAME
         FROM INFORMATION_SCHEMA.TABLES
         WHERE TABLE_SCHEMA = '{SCHEMA}'
         ORDER BY TABLE_SCHEMA, TABLE_NAME DESC
