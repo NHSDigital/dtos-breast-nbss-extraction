@@ -38,4 +38,4 @@ Connects to InterSystems Cache via ODBC (DSN=NBSS_64), fetches the first 5 table
 
 1. Run `python export_app_tables.py`
 
-This will save the tables as .csv into the folder `\extracts`
+This will save the tables as .csv into the folder `\cache_data_export`

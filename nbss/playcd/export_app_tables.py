@@ -17,7 +17,7 @@ DSN        = os.getenv("DSN")
 UID        = os.getenv("UID")
 PWD        = os.getenv("PWD")
 SCHEMA     = "APP" # feel free to change this to target a different schema
-OUTPUT_DIR = "extracts"
+OUTPUT_DIR = "cache_data_export"
 CHUNK_SIZE = 10000
 
 def main():
