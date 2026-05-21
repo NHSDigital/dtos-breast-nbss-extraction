@@ -33,3 +33,4 @@ __pycache__/
 # Cache exports
 nbss/playcd/cache_export/*
 !nbss/playcd/cache_export/.gitkeep
+nbss/playcd/.env
