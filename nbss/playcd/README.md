@@ -24,17 +24,17 @@ NB: use '/' not '\' in filepaths.
 
 This splits the large export into individual XML files organised by type (`cls/`, `mac/`, `inc/`).
 
-# NBSS Scrape
+## NBSS Scrape
 
 Connects to InterSystems Cache via ODBC (DSN=NBSS_64), fetches the first 5 tables from the APP schema, loads each into a pandas DataFrame and exports to CSV.
 
-## Prerequisite 
+### Prerequisite
 
-- Within the local environment you are running ensure you have set up the ODBC Data Sources (Set up Part B - [ODBC Connector](https://nhsd-confluence.digital.nhs.uk/spaces/DTS/pages/1373789640/DSTA-554+Access+data+stored+in+Cache) )
+- Within the local environment you are running ensure you have set up the ODBC Data Sources (Set up Part B - [ODBC Connector](https://nhsd-confluence.digital.nhs.uk/spaces/DTS/pages/1373789640/DSTA-554+Access+data+stored+in+Cache))
 
 - `.env` for the variables for DSN (ODBC)
- 
-## Scraping Tables
+
+### Scraping Tables
 
 1. Run `python export_app_tables.py`
 
