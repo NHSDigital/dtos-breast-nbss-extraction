@@ -34,3 +34,6 @@ __pycache__/
 nbss/playcd/cache_export/*
 !nbss/playcd/cache_export/.gitkeep
 nbss/playcd/.env
+
+# data files
+*.csv
