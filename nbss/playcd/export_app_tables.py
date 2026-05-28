@@ -2,20 +2,23 @@
 Description:
 Connects to InterSystems Cache via ODBC (DSN=NBSS_64), fetches the first 5 tables from the APP schema,
 loads each into a pandas DataFrame and exports to CSV.
-Note: retireved empty tables, in additon to the tables with data to the structure
+Note: retrieved empty tables, in addition to the tables with data to the structure
 """
+import csv
 import pyodbc
-import pandas as pd
-from datetime import datetime
 from dotenv import load_dotenv
 import os
 import sys
 
 # variables
 load_dotenv()
-DSN = os.getenv("DSN")
+DRIVER = os.getenv("DRIVER")
+SERVER = os.getenv("SERVER")
+PORT = os.getenv("PORT")
+DATABASE = os.getenv("DATABASE")
 UID = os.getenv("UID")
 PWD = os.getenv("PWD")
+
 OUTPUT_DIR = "cache_data_export"
 CHUNK_SIZE = 10000
 
@@ -23,7 +26,12 @@ def main():
 
     # connection
     try:
-        conn = pyodbc.connect(f"DSN={DSN};UID={UID};PWD={PWD}")
+        conn = pyodbc.connect(f"DRIVER={{{DRIVER}}};SERVER={SERVER};PORT={PORT};DATABASE={DATABASE};UID={UID};PWD={PWD}")
+        # out-of-range cannot parse.
+        to_str = lambda v: v.decode("utf-8") if v is not None else None
+        conn.add_output_converter(pyodbc.SQL_TYPE_DATE, to_str)
+        conn.add_output_converter(pyodbc.SQL_TYPE_TIME, to_str)
+        conn.add_output_converter(pyodbc.SQL_TYPE_TIMESTAMP, to_str)
         print("Connected!\n")
     except pyodbc.Error as e:
         print(f"Connection failed: {e.args[1]}")
@@ -31,8 +39,7 @@ def main():
 
     cursor = conn.cursor()
 
-    # get first 5 tables from APP schema
-    # feel to change query to pick up more tables or filter differently
+    # get all base tables
     cursor.execute(f"""
         SELECT TABLE_SCHEMA, TABLE_NAME
         FROM INFORMATION_SCHEMA.TABLES
@@ -50,20 +57,19 @@ def main():
             cursor.execute(f"SELECT * FROM {full_table_name}")
             columns = [col[0] for col in cursor.description]
 
-            chunks = []
-            while rows := cursor.fetchmany(CHUNK_SIZE):
-                chunks.append(pd.DataFrame.from_records(rows, columns=columns))
-
-            df = pd.concat(chunks, ignore_index=True) if chunks else pd.DataFrame(columns=columns)
-
-            # save files
-            filename    = f"{table}.csv"
             schema_dir  = f"{OUTPUT_DIR}/{schema}"
             os.makedirs(schema_dir, exist_ok=True)
             output_path = os.path.join(schema_dir, f"{table}.csv")
-            df.to_csv(output_path, index=False)
 
-            print(f"{full_table_name:<10} - {df.shape[0]:>6,} rows x {df.shape[1]} cols → {table}.csv")
+            row_count = 0
+            with open(output_path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow(columns)
+                while rows := cursor.fetchmany(CHUNK_SIZE):
+                    writer.writerows(rows)
+                    row_count += len(rows)
+
+            print(f"{full_table_name:<10} - {row_count:>6,} rows x {len(columns)} cols → {table}.csv")
 
         except Exception as e:
             print(f"{schema}.{table} failed: {e}")
