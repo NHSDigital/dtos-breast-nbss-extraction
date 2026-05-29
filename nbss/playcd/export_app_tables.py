@@ -9,6 +9,8 @@ import pyodbc
 from dotenv import load_dotenv
 import os
 import sys
+import unittest
+import test_export
 
 # variables
 load_dotenv()
@@ -82,3 +84,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+    suite = unittest.TestLoader().loadTestsFromModule(test_export)
+    runner = unittest.TextTestRunner(verbosity=2)
+    result = runner.run(suite)
+    sys.exit(0 if result.wasSuccessful() else 1)
