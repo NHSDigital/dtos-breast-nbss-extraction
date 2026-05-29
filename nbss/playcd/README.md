@@ -34,7 +34,7 @@ Connects to NBSS_DEM via ODBC, fetches all tables and exports to CSV.
 
 - Create a `.env` file in `nbss/playcd` and add the following:
 
-```
+```ENVIRONMENT
 DRIVER=InterSystems ODBC
 SERVER=127.0.0.1
 PORT=1972
@@ -53,6 +53,6 @@ This will save the tables as .csv into the folder `\cache_data_export`
 
 - In Parallels, install Python 32-bit: open powershell and run `winget install Python.Python.3.12 --architecture x86`
 - Then run `py -3.12-32 -m pip install pyodbc python-dotenv`
-- Open file explorer (in Windows) and find `dtos-breast-nbss-extraction\nbss\playcd`. Most likely in 'Home on Mac (Z:/)' drive. Copy the path (eg. `Z:\dtos-breast-nbss-extraction\nbss\playcd`).
+- Open file explorer (in Windows) and find `dtos-breast-nbss-extraction\nbss\playcd`. Most likely in 'Home on Mac (Z:/)' drive. Copy the path (for example: `Z:\dtos-breast-nbss-extraction\nbss\playcd`).
 - run `cd <path from above>`
 - run `py -3.12-32 export_app_tables.py`

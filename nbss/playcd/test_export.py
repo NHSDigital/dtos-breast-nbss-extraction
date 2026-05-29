@@ -1,10 +1,9 @@
 """
 Verifies that the CSV files produced by export_app_tables.py match the base
 tables returned from the database:
-  - total CSV count equals total table count
-  - every DB table has a corresponding CSV file
-  - no extra CSV files exist without a matching DB table
-
+total CSV count equals total table count
+every DB table has a corresponding CSV file
+no extra CSV files exist without a matching DB table
 Note: This will be called from export_app_tables.py after it finishes or can be called individually
 """
 import os
@@ -44,7 +43,6 @@ def _get_db_tables(conn):
     cursor.close()
     return {(schema, table) for schema, table in rows}
 
-
 def _get_csv_files():
     """Walk OUTPUT_DIR and return a set of (schema, table_name) tuples."""
     found = set()
@@ -56,7 +54,6 @@ def _get_csv_files():
                 if f.name.endswith(".csv"):
                     found.add((entry.name, f.name[:-4]))  # strip .csv
     return found
-
 
 class TestExportAppTables(unittest.TestCase):
 
@@ -76,8 +73,6 @@ class TestExportAppTables(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.conn.close()
-
-    # ------------------------------------------------------------------
 
     def test_csv_count_matches_table_count(self):
         self.assertEqual(
@@ -102,7 +97,6 @@ class TestExportAppTables(unittest.TestCase):
             f"{len(extra)} CSV file(s) have no matching DB table:\n"
             + "\n".join(f"  {s}.{t}" for s, t in sorted(extra)),
         )
-
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
