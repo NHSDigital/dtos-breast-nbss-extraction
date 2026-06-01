@@ -2,21 +2,25 @@
 Description:
 Connects to InterSystems Cache via ODBC (DSN=NBSS_64), fetches the first 5 tables from the APP schema,
 loads each into a pandas DataFrame and exports to CSV.
-
+Note: retrieved empty tables, in addition to the tables with data to the structure
 """
+import csv
 import pyodbc
-import pandas as pd
-from datetime import datetime
 from dotenv import load_dotenv
 import os
 import sys
+import unittest
+import test_export
 
 # variables
 load_dotenv()
-DSN        = os.getenv("DSN")
-UID        = os.getenv("UID")
-PWD        = os.getenv("PWD")
-SCHEMA     = "APP" # feel free to change this to target a different schema
+DRIVER = os.getenv("DRIVER")
+SERVER = os.getenv("SERVER")
+PORT = os.getenv("PORT")
+DATABASE = os.getenv("DATABASE")
+UID = os.getenv("UID")
+PWD = os.getenv("PWD")
+
 OUTPUT_DIR = "cache_data_export"
 CHUNK_SIZE = 10000
 
@@ -24,7 +28,12 @@ def main():
 
     # connection
     try:
-        conn = pyodbc.connect(f"DSN={DSN};UID={UID};PWD={PWD}")
+        conn = pyodbc.connect(f"DRIVER={{{DRIVER}}};SERVER={SERVER};PORT={PORT};DATABASE={DATABASE};UID={UID};PWD={PWD}")
+        # out-of-range cannot parse.
+        to_str = lambda v: v.decode("utf-8") if v is not None else None
+        conn.add_output_converter(pyodbc.SQL_TYPE_DATE, to_str)
+        conn.add_output_converter(pyodbc.SQL_TYPE_TIME, to_str)
+        conn.add_output_converter(pyodbc.SQL_TYPE_TIMESTAMP, to_str)
         print("Connected!\n")
     except pyodbc.Error as e:
         print(f"Connection failed: {e.args[1]}")
@@ -32,53 +41,37 @@ def main():
 
     cursor = conn.cursor()
 
-    # get first 5 tables from APP schema
-    # feel to change query to pick up more tables or filter differently
+    # get all base tables
     cursor.execute(f"""
-        SELECT TOP 5 TABLE_SCHEMA, TABLE_NAME
+        SELECT TABLE_SCHEMA, TABLE_NAME
         FROM INFORMATION_SCHEMA.TABLES
-        WHERE TABLE_SCHEMA = '{SCHEMA}'
-        ORDER BY TABLE_SCHEMA, TABLE_NAME DESC
+        WHERE TABLE_TYPE ='BASE TABLE'
     """)
 
     tables = cursor.fetchall()
-
-    print(f"📋 Tables found in [{SCHEMA}] schema:")
-    for schema, table in tables:
-        print(f"   {schema}.{table}")
-
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-    # loop through tables, fetch data, export to .csv
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     print("\nFetching data from tables\n")
 
     for schema, table in tables:
         try:
             full_table_name = f"{schema}.{table}"
-            SQL = f"SELECT * FROM {full_table_name}"
+            cursor.execute(f"SELECT * FROM {full_table_name}")
+            columns = [col[0] for col in cursor.description]
 
-            cursor.execute(SQL)
-            columns   = [col[0] for col in cursor.description]
-            chunks    = []
-            total_rows = 0
+            schema_dir  = f"{OUTPUT_DIR}/{schema}"
+            os.makedirs(schema_dir, exist_ok=True)
+            output_path = os.path.join(schema_dir, f"{table}.csv")
 
-            while True:
-                rows = cursor.fetchmany(CHUNK_SIZE)
-                if not rows:
-                    break
-                chunks.append(pd.DataFrame.from_records(rows, columns=columns))
-                total_rows += len(rows)
+            row_count = 0
+            with open(output_path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow(columns)
+                while rows := cursor.fetchmany(CHUNK_SIZE):
+                    writer.writerows(rows)
+                    row_count += len(rows)
 
-            df = pd.concat(chunks, ignore_index=True) if chunks else pd.DataFrame(columns=columns)
-
-            # save files
-            filename    = f"{schema}_{table}_{timestamp}.csv"
-            output_path = os.path.join(OUTPUT_DIR, filename)
-            df.to_csv(output_path, index=False)
-
-            print(f"{full_table_name:<10} - {df.shape[0]:>6,} rows x {df.shape[1]} cols → {filename}")
+            print(f"{full_table_name:<10} - {row_count:>6,} rows x {len(columns)} cols → {table}.csv")
 
         except Exception as e:
             print(f"{schema}.{table} failed: {e}")
@@ -89,6 +82,10 @@ def main():
 
     print(f"\nAll CSVs saved to: {os.path.abspath(OUTPUT_DIR)}")
 
-
 if __name__ == "__main__":
     main()
+
+    suite = unittest.TestLoader().loadTestsFromModule(test_export)
+    runner = unittest.TextTestRunner(verbosity=2)
+    result = runner.run(suite)
+    sys.exit(0 if result.wasSuccessful() else 1)

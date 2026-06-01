@@ -31,6 +31,9 @@ __pycache__/
 .DS_Store
 
 # Cache exports
-nbss/playcd/cache_export/*
-!nbss/playcd/cache_export/.gitkeep
+nbss/playcd/cache_scripts_export/*
+!nbss/playcd/cache_scripts_export/.gitkeep
 nbss/playcd/.env
+
+# data files
+*.csv
