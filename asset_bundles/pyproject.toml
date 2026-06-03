@@ -1,0 +1,11 @@
+[project]
+name = "asset-bundles"
+version = "0.1.0"
+description = "Asset Bundles Environment"
+requires-python = ">=3.12.12"
+dependencies = [
+    "chispa>=0.12.0",
+    "databricks-sdk>=0.114.0",
+    "pyspark>=4.1.2",
+    "pytest>=9.0.3",
+]

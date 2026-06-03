@@ -1,0 +1,16 @@
+[project]
+name = "dtos-breast-nbss-extraction"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+
+]
+
+[tool.uv.workspace]
+members = [
+    "nbss/playcd",
+    "asset_bundles",
+]
+
