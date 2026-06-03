@@ -37,4 +37,3 @@ nbss/playcd/.env
 
 # data files
 *.csv
-uv.lock
