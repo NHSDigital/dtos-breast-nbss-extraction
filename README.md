@@ -11,6 +11,7 @@ Welcome to the Breast Screening Reporting team's repository. This repo contains 
   - [Quick start](#quick-start)
   - [Repository layout](#repository-layout)
   - [Development workflow](#development-workflow)
+  - [Package and Project management](#package-and-project-management)
   - [Testing](#testing)
     - [Locally](#locally)
     - [On Databricks (dev)](#on-databricks-dev)
@@ -30,6 +31,7 @@ This should be a frictionless installation process that works on various operati
 | [Python 3](https://www.python.org/) | For DLT code, tests and Git hooks |
 | [GNU make](https://www.gnu.org/software/make/) ≥ 3.82 | macOS default is older — `brew install make` |
 | [asdf](https://asdf-vm.com/) | Version manager |
+| [uv](https://docs.astral.sh/uv/) | package and project manager |
 
 > [!NOTE]
 > On macOS the default GNU make is too old. After `brew install make`, follow the Homebrew output to update your `$PATH`.
@@ -86,6 +88,83 @@ The day-to-day loop is:
 6. Deploy to your personal dev schemas: `databricks bundle deploy -t dev`
 7. Run on Databricks: `databricks bundle run -t dev <pipeline_name>`
 8. Open a PR — see [Contributing](docs/CONTRIBUTING.md)
+
+## Package and Project management
+
+This repo uses [uv](https://docs.astral.sh/uv/) for Python and project management.
+
+### Setting up a new project or folder
+
+If you are adding a new sub-project or workspace member (e.g. a new folder under `nbss/`), initialise it with:
+
+```shell
+cd path/to/new-folder
+uv init
+```
+
+This creates a `pyproject.toml` for that folder. Then add it as a workspace member in the root `pyproject.toml`:
+
+```toml
+[tool.uv.workspace]
+members = [
+    "nbss/new-folder",
+]
+```
+
+> [!NOTE]
+> Do not run `uv init` from the repo root — the root project already exists. Running it again will overwrite the root `pyproject.toml`.
+
+### Adding packages
+
+To add a dependency to a workspace member, run from the member's folder:
+
+```shell
+cd path/to/member
+uv add <package-name>
+```
+
+To add a dependency to the root project:
+
+```shell
+uv add <package-name>
+```
+
+### Keeping packages up to date
+
+To install or sync all dependencies across the entire workspace (root + all members):
+
+```shell
+uv sync
+```
+
+To sync only a specific workspace member without leaving the repo root:
+
+```shell
+uv sync --package <member-name>
+```
+
+If you see packages being unexpectedly uninstalled, regenerate the lockfile first:
+
+```shell
+uv lock
+uv sync
+```
+
+### Running scripts and tools
+
+Use `uv run` to execute a script or tool inside the project's virtual environment without needing to activate it manually:
+
+```shell
+# Run a Python script
+uv run python path/to/script.py
+
+# Run a script in a specific workspace member
+uv run --package playcd python nbss/playcd/export_app_tables.py
+
+```
+
+> [!TIP]
+> `uv run` automatically syncs the environment before running, so you don't need to call `uv sync` separately beforehand.
 
 ## Testing
 

@@ -18,6 +18,8 @@ repo
 sed
 Syft
 Terraform
+lockfile
 toolchain
 Trufflehog
+uv
 yml
