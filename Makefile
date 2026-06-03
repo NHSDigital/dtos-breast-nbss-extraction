@@ -25,7 +25,8 @@ clean:: # Clean-up project resources (main) @Operations
 config:: # Configure development environment (main) @Configuration
 	# TODO: Use only 'make' targets that are specific to this project, e.g. you may not need to install Node.js
 	make _install-dependencies
-	pip install -r asset_bundles/requirements.txt
+	uv lock 
+	uv sync
 
 # ==============================================================================
 
