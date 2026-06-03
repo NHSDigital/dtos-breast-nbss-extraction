@@ -1,4 +1,0 @@
-databricks-sdk
-pytest
-pyspark
-chispa
