@@ -18,16 +18,18 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Install Python dependencies
-        run: pip install -r asset_bundles/requirements.txt
+        working-directory: asset_bundles
+        run: uv sync
 
       - name: Run unit tests
-        run: cd asset_bundles && pytest tests/unit/
+        working-directory: asset_bundles
+        run: uv run pytest tests/unit/
 
       - name: Install Databricks CLI
         run: curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
