@@ -21,3 +21,4 @@ Terraform
 toolchain
 Trufflehog
 yml
+uv
