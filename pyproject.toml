@@ -1,0 +1,8 @@
+[project]
+name = "dtos-breast-nbss-extraction"
+version = "0.1.0"
+description = "Main repo for nbss extraction"
+readme = "README.md"
+requires-python = ">=3.12.12"
+dependencies = []
+
