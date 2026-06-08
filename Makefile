@@ -8,6 +8,9 @@ include scripts/init.mk
 # Example CI/CD targets are: dependencies, build, publish, deploy, clean, etc.
 
 dependencies: # Install dependencies needed to build and test the project @Pipeline
+	uv sync --directory .
+	uv sync --directory asset_bundles
+	uv sync --directory nbss/playcd
 
 build: # Build the project artefact @Pipeline
 	# TODO: Implement the artefact build step
