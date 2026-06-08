@@ -121,7 +121,7 @@ This repo uses [uv](https://docs.astral.sh/uv/) for Python dependency management
 
 | Directory | Package | Purpose |
 |-----------|---------|----------|
-| `.` (root) | `dtos-breast-nbss-extraction` | Repo-level tooling |
+| `.` (root) | `dtos-breast-nbss-extraction` | repo-level tooling |
 | `asset_bundles/` | `asset-bundles` | DLT pipeline code & unit tests |
 | `nbss/playcd/` | `playcd` | NBSS extraction scripts |
 

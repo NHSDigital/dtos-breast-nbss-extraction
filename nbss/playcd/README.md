@@ -29,6 +29,7 @@ This splits the large export into individual XML files organised by type (`cls/`
 Connects to NBSS_DEM via ODBC, fetches all tables and exports to CSV.
 
 ### Prerequisites
+
 - Caché is installed
 
 - Create a `.env` file in `nbss/playcd` and add the following:
@@ -43,7 +44,6 @@ PWD=<password for NBSS_DEM data source>
 ```
 
 - (Optional) Within the local environment where Caché runs, set up the NBSS_DEM ODBC Data Source (Set up Part B - [ODBC Connector](https://nhsd-confluence.digital.nhs.uk/spaces/DTS/pages/1373789640/DSTA-554+Access+data+stored+in+Cache))
-
 
 ### Scraping Tables - Option 1: Windows with Caché running natively
 
