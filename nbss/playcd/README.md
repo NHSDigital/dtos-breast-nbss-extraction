@@ -20,7 +20,7 @@ NB: use '/' not '\' in filepaths.
 ### Unpacking
 
 1. Move the exported XML file to `cache_export`
-2. Run `python unpack_scripts.py`
+2. Run `uv run unpack_scripts.py`
 
 This splits the large export into individual XML files organised by type (`cls/`, `mac/`, `inc/`).
 
@@ -29,8 +29,7 @@ This splits the large export into individual XML files organised by type (`cls/`
 Connects to NBSS_DEM via ODBC, fetches all tables and exports to CSV.
 
 ### Prerequisites
-
-- Within the local environment where Caché runs, set up the NBSS_DEM ODBC Data Source (Set up Part B - [ODBC Connector](https://nhsd-confluence.digital.nhs.uk/spaces/DTS/pages/1373789640/DSTA-554+Access+data+stored+in+Cache))
+- Caché is installed
 
 - Create a `.env` file in `nbss/playcd` and add the following:
 
@@ -43,9 +42,12 @@ UID=<username for NBSS_DEM data source>
 PWD=<password for NBSS_DEM data source>
 ```
 
+- (Optional) Within the local environment where Caché runs, set up the NBSS_DEM ODBC Data Source (Set up Part B - [ODBC Connector](https://nhsd-confluence.digital.nhs.uk/spaces/DTS/pages/1373789640/DSTA-554+Access+data+stored+in+Cache))
+
+
 ### Scraping Tables - Option 1: Windows with Caché running natively
 
-- Run `python export_app_tables.py`
+- Run (via powershell due to ODBC connectors installed via Caché) `uv run export_app_tables.py`
 
 This will save the tables as .csv into the folder `\cache_data_export`
 
