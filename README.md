@@ -125,7 +125,7 @@ This repo uses [uv](https://docs.astral.sh/uv/) for Python dependency management
 | `asset_bundles/` | `asset-bundles` | DLT pipeline code & unit tests |
 | `nbss/playcd/` | `playcd` | NBSS extraction scripts |
 
-Each workspace contains its own `pyproject.toml` and `uv.lock`, so dependency changes in one workspace have no effect on the others.
+Each sub-project contains its own `pyproject.toml` and `uv.lock`, so dependency changes in one sub-project have no effect on the others.
 
 ### Adding a new workspace
 
