@@ -3,8 +3,8 @@
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-EXPORT_FILE = Path(__file__).parent / "cache_export" / "all_files_export.xml"
-OUTPUT_DIR = Path(__file__).parent / "cache_export"
+EXPORT_FILE = Path(__file__).parent / "cache_scripts_export" / "all_files_export.xml"
+OUTPUT_DIR = Path(__file__).parent / "cache_scripts_export"
 
 
 def write_element(
