@@ -115,7 +115,7 @@ Review the pipeline run in the Databricks UI to verify data flows through bronze
 
 ## Dependency management with uv
 
-This repo uses [uv](https://docs.astral.sh/uv/) for Python dependency management. Each sub-project is a **standalone uv workspace** with its own virtual environment and lockfile, keeping dependencies fully isolated from one another.
+This repo uses [uv](https://docs.astral.sh/uv/) for Python dependency management. Each sub-project is a **standalone uv project** with its own virtual environment and lockfile, keeping dependencies fully isolated from one another.
 
 ### Workspaces
 
@@ -127,39 +127,14 @@ This repo uses [uv](https://docs.astral.sh/uv/) for Python dependency management
 
 Each sub-project contains its own `pyproject.toml` and `uv.lock`, so dependency changes in one sub-project have no effect on the others.
 
-### Adding a new workspace
+### Adding a new project
 
-To create a new isolated sub-workspace that is **not** linked to the root or any other workspace, use the `--no-workspace` flag:
+Use [uv init](https://docs.astral.sh/uv/reference/cli/#uv-init) to create a new, isolated sub-project for a given directory:
 
-```shell
-# Create a new standalone workspace at <directory>
-uv init --no-workspace <directory>
-```
 
-This generates a `pyproject.toml` and a scoped `uv.lock` inside `<directory>` only. Omitting this flag would allow uv to auto-discover and attach the new project to a parent workspace if one exists.
+### Running commands within a sub-project
 
-> [!NOTE]
-> Older versions of uv used `--no-link` instead of `--no-workspace`. If your uv version predates `0.4`, substitute `--no-link`.
-
-To add a dependency to the new workspace:
-
-```shell
-cd <directory>
-uv add <package>
-```
-
-### Running commands within a workspace
-
-All `uv` commands are scoped to the directory they are run from. Change into the relevant workspace first:
-
-```shell
-# Install / sync dependencies
-cd nbss/playc
-uv sync
-
-# Run a script
-uv run python unpack_scripts.py
-```
+All `uv` commands are scoped to the directory they are run from. Change into the relevant sub-project first:
 
 ## Contributing
 
