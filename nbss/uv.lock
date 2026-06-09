@@ -3,7 +3,7 @@ revision = 3
 requires-python = ">=3.12.12"
 
 [[package]]
-name = "playcd"
+name = "nbss"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

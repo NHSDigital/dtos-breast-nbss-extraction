@@ -45,9 +45,13 @@ PWD=<password for NBSS_DEM data source>
 
 - (Optional) Within the local environment where Caché runs, set up the NBSS_DEM ODBC Data Source (Set up Part B - [ODBC Connector](https://nhsd-confluence.digital.nhs.uk/spaces/DTS/pages/1373789640/DSTA-554+Access+data+stored+in+Cache))
 
+- `pip install uv` via powershell to run `export_app_tables.py`.
+
 ### Scraping Tables - Option 1: Windows with Caché running natively
 
-- Run (via powershell due to ODBC connectors installed via Caché) `uv run export_app_tables.py`
+Caché installed `InterSystems ODBC` within `windows`. The issue is that it is not installed within `WSL` and ensure it installed to `WSL` it driver that is discontinued. Reason being why will need to run via `uv` Powershell.
+
+- Run (via powershell due to ODBC connectors installed via Caché) `uv run export_app_tables.py`.
 
 This will save the tables as .csv into the folder `\cache_data_export`
 
