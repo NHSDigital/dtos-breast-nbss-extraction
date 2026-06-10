@@ -30,7 +30,7 @@ Connects to NBSS_DEM via ODBC, fetches all tables and exports to CSV.
 
 **Problem**: Exporting the data is bit more complex as Caché installed `InterSystems ODBC` within `windows`. As the repo is set to run with Linux, running the script via Linux (WSL) is difficult due to `InterSystems ODBC` only accessible via windows.
 
-**_For meantime we run this script via Powersehll_**
+**_For meantime we will run this script via Powersehll_**
 
 ### Prerequisites
 
@@ -52,6 +52,13 @@ PWD=<password for NBSS_DEM data source>
 ### Scraping Tables - Option 1: Windows with Caché running natively
 
 - Run (via powershell due to ODBC connectors installed via Caché) `uv run export_app_tables.py`.
+
+```PowerShell
+cd nbss
+Remove-Item -Recurse -Force .venv # if there is already .venv created
+cd playcd
+uv run export_app_tables.py
+````
 
 This will save the tables as .csv into the folder `\cache_data_export`
 
