@@ -134,6 +134,10 @@ Use [uv init](https://docs.astral.sh/uv/reference/cli/#uv-init) to create a new,
 
 All `uv` commands are scoped to the directory they are run from. Change into the relevant sub-project first:
 
+```shell
+uv sync --directory nbss # state the name of project to run
+```
+
 ## Contributing
 
 See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for branch naming, commit message conventions, PR workflow and coding standards.
