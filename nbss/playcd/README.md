@@ -28,7 +28,7 @@ This splits the large export into individual XML files organised by type (`cls/`
 
 Connects to NBSS_DEM via ODBC, fetches all tables and exports to CSV.
 
-**Problem**: Exporting the data is bit more complex as Caché installed `InterSystems ODBC` within `windows`. As the repo is set to run with linux, running the script via linux (WSL) is diffuclt due to `InterSystems ODBC` only accessible via windows.
+**Problem**: Exporting the data is bit more complex as Caché installed `InterSystems ODBC` within `windows`. As the repo is set to run with Linux, running the script via Linux (WSL) is difficult due to `InterSystems ODBC` only accessible via windows.
 
 **_For meantime we run this script via Powersehll_**
 
@@ -47,7 +47,7 @@ PWD=<password for NBSS_DEM data source>
 
 - (Optional) Within the local environment where Caché runs, set up the NBSS_DEM ODBC Data Source (Set up Part B - [ODBC Connector](https://nhsd-confluence.digital.nhs.uk/spaces/DTS/pages/1373789640/DSTA-554+Access+data+stored+in+Cache))
 
-- If you do not have these packages install loally please install `pyodbc, python-dotenv`.
+- If you do not have these packages install locally please install `pyodbc, python-dotenv`.
 
 ### Scraping Tables - Option 1: Windows with Caché running natively
 
