@@ -8,7 +8,7 @@ include scripts/init.mk
 # Example CI/CD targets are: dependencies, build, publish, deploy, clean, etc.
 
 dependencies: # Install dependencies needed to build and test the project @Pipeline
-	pip install -r asset_bundles/requirements.txt
+	uv sync --directory nbss
 
 build: # Build the project artefact @Pipeline
 	# TODO: Implement the artefact build step
@@ -25,7 +25,6 @@ clean:: # Clean-up project resources (main) @Operations
 config:: # Configure development environment (main) @Configuration
 	# TODO: Use only 'make' targets that are specific to this project, e.g. you may not need to install Node.js
 	make _install-dependencies
-	pip install -r asset_bundles/requirements.txt
 
 # ==============================================================================
 

@@ -14,6 +14,10 @@ Welcome to the Breast Screening Reporting team's repository. This repo contains 
   - [Testing](#testing)
     - [Locally](#locally)
     - [On Databricks (dev)](#on-databricks-dev)
+  - [Dependency management with uv](#dependency-management-with-uv)
+    - [Sub-Projects](#sub-projects)
+    - [Adding a new workspace](#adding-a-new-project)
+    - [Running commands within a Project](#running-commands-within-a-sub-project)
   - [Contributing](#contributing)
   - [Contacts](#contacts)
   - [Licence](#licence)
@@ -109,13 +113,38 @@ databricks bundle run -t dev <pipeline_name>
 
 Review the pipeline run in the Databricks UI to verify data flows through bronze → silver → gold correctly.
 
+## Dependency management with uv
+
+This repo uses [uv](https://docs.astral.sh/uv/) for Python dependency management. Each sub-project is a **standalone uv project** with its own virtual environment and lockfile, keeping dependencies fully isolated from one another.
+
+### Sub-Projects
+
+| Directory | Package | Purpose |
+|-----------|---------|----------|
+| `.` (root) | `dtos-breast-nbss-extraction` | repo-level tooling |
+| `nbss` | `nbss` | NBSS extraction scripts |
+
+Each sub-project contains its own `pyproject.toml` and `uv.lock`, so dependency changes in one sub-project have no effect on the others.
+
+### Adding a new project
+
+Use [uv init](https://docs.astral.sh/uv/reference/cli/#uv-init) to create a new, isolated sub-project for a given directory:
+
+### Running commands within a sub-project
+
+All `uv` commands are scoped to the directory they are run from. Change into the relevant sub-project first:
+
+```shell
+uv sync --directory nbss # state the name of project to run
+```
+
 ## Contributing
 
 See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for branch naming, commit message conventions, PR workflow and coding standards.
 
 ## Contacts
 
-Slack: **screening-breast-reporting**
+Slack: **screening-breast-nbss-extraction**
 
 ## Licence
 
