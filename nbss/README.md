@@ -43,17 +43,15 @@ PWD=<password for NBSS_DEM data source>
 
 - (Optional) Within the local environment where Caché runs, set up the NBSS_DEM ODBC Data Source (Set up Part B - [ODBC Connector](https://nhsd-confluence.digital.nhs.uk/spaces/DTS/pages/1373789640/DSTA-554+Access+data+stored+in+Cache))
 
-- If you do not have these packages install locally please install `pyodbc, python-dotenv`.
-
 ### Scraping Tables - Option 1: Windows with Caché running natively
 
-**Problem**: Exporting the data is bit more complex as Caché installed `InterSystems ODBC` within `windows`. As the repo is set to run with Linux, running the script via Linux (WSL) is difficult due to `InterSystems ODBC` only accessible via windows.
+**Problem**: Exporting the data is bit more complex as Caché installed `InterSystems ODBC` within `windows`. The repo is set to run with Linux (due to Make), however running this script via Linux (WSL) is difficult due to `InterSystems ODBC` only accessible via windows.
 
-**_For meantime we will run this script via Powersehll_**
+**_For meantime we will run this script via Powershell_**
 
 Reference [InterSystem ODBC](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GEPYTHON_loadlib)
 
-- Run (via powershell due to ODBC connectors installed via Caché) `uv run export_app_tables.py`.
+- Run (via powershell due to ODBC connectors installed via Caché):
 
 ```PowerShell
 cd nbss
