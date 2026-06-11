@@ -28,10 +28,6 @@ This splits the large export into individual XML files organised by type (`cls/`
 
 Connects to NBSS_DEM via ODBC, fetches all tables and exports to CSV.
 
-**Problem**: Exporting the data is bit more complex as Caché installed `InterSystems ODBC` within `windows`. As the repo is set to run with Linux, running the script via Linux (WSL) is difficult due to `InterSystems ODBC` only accessible via windows.
-
-**_For meantime we will run this script via Powersehll_**
-
 ### Prerequisites
 
 - Create a `.env` file in `nbss/playcd` and add the following:
@@ -50,6 +46,12 @@ PWD=<password for NBSS_DEM data source>
 - If you do not have these packages install locally please install `pyodbc, python-dotenv`.
 
 ### Scraping Tables - Option 1: Windows with Caché running natively
+
+**Problem**: Exporting the data is bit more complex as Caché installed `InterSystems ODBC` within `windows`. As the repo is set to run with Linux, running the script via Linux (WSL) is difficult due to `InterSystems ODBC` only accessible via windows.
+
+**_For meantime we will run this script via Powersehll_**
+
+Reference [InterSystem ODBC](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GEPYTHON_loadlib)
 
 - Run (via powershell due to ODBC connectors installed via Caché) `uv run export_app_tables.py`.
 
