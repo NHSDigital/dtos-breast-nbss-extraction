@@ -4,6 +4,17 @@
 
 set -euo pipefail
 
+# Depending on how editorconfig is installed, editorconfig-checker uses either the `ec` or `editorconfig-checker` command.
+# If your installation uses 'editorconfig-checker' command,
+# this command will source the `ec` alias from your `~/.bash_aliases` file, if it exists.
+# (You will need to have ec alias defined in your `~/.bash_aliases` file for it to work)
+# If not, it will continue through the script and check for ec command. If it is not found, it will run the editorconfig-checker in a Docker container.
+shopt -s expand_aliases
+
+if [[ -r "$HOME/.bash_aliases" ]]; then
+  # shellcheck disable=SC1090
+  source "$HOME/.bash_aliases"
+fi
 # Pre-commit git hook to check the EditorConfig rules compliance over changed
 # files. It ensures all non-binary files across the codebase are formatted
 # according to the style defined in the `.editorconfig` file. This is a
