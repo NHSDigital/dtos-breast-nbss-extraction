@@ -11,8 +11,8 @@ set -euo pipefail
 # Here we assume the native command is 'ec', or an alias to 'ec' exists in `~/.bash_aliases`.
 shopt -s expand_aliases
 
-if [[ -r "$HOME/.bash_aliases" ]]; then
-  source "$HOME/.bash_aliases"
+if [[ -n "${HOME:-}" && -r "${HOME}/.bash_aliases" ]]; then
+  source "${HOME}/.bash_aliases" || true
 fi
 # Pre-commit git hook to check the EditorConfig rules compliance over changed
 # files. It ensures all non-binary files across the codebase are formatted
