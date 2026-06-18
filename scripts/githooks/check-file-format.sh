@@ -4,6 +4,16 @@
 
 set -euo pipefail
 
+# The Editor Config specification (https://editorconfig.org/) is encapsulated in the `.editorconfig` file in the project root.
+# We use the Editor Config Checker program (https://github.com/editorconfig-checker/editorconfig-checker) to enforce the specification.
+# Command names for native editorconfig-checker installs can vary, it can be called either 'editorconfig-checker' or 'ec'.
+# (The dockerised version is always: 'ec'.)
+# Here we assume the native command is 'ec', or an alias to 'ec' exists in `~/.bash_aliases`.
+shopt -s expand_aliases
+
+if [[ -n "${HOME:-}" && -r "${HOME}/.bash_aliases" ]]; then
+  source "${HOME}/.bash_aliases" || true
+fi
 # Pre-commit git hook to check the EditorConfig rules compliance over changed
 # files. It ensures all non-binary files across the codebase are formatted
 # according to the style defined in the `.editorconfig` file. This is a
