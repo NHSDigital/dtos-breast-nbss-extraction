@@ -1,0 +1,159 @@
+# Creating a Caché User via Terminal
+
+## Prerequisites
+
+- Caché must be running
+- You must have admin user
+
+---
+
+## Step 1 — Open a Caché terminal session
+
+On Caché Terminal
+
+You might be prompted for credentials (Use a user with admin privileges):
+
+```Caché
+Username: <username>
+Password: <password>>
+```
+
+You should see the `%SYS>` prompt. If not please
+
+```Caché Terminal
+    ZN "%SYS"
+```
+
+---
+
+## Step 2 — Create the user
+
+Please Change `username` and  `password` before running this command in the terminal
+
+```Caché Terminal
+SET sc = ##class(Security.Users).Create("<username>","%SYS","<password>")
+WRITE $SYSTEM.Status.GetErrorText(sc),!
+```
+
+A blank line means success. Any error text indicates a problem.
+
+---
+
+## Step 3 — Grant roles
+
+Please Change `username` before running this command in the terminal
+
+```Caché Terminal
+; Full system admin
+SET sc = ##class(Security.Users).AddRoles("<username>","%All")
+WRITE $SYSTEM.Status.GetErrorText(sc),!
+```
+
+### Optional
+
+Please Change `username` before running this command in the terminal
+
+If you want grant access to additional services such `NBSSapp, BSSReporting, DB_...`
+
+```Caché Terminal
+; NBSS_DEM database access
+SET sc = ##class(Security.Users).AddRoles("<username>","%DB_NBSS_DEM")
+WRITE $SYSTEM.Status.GetErrorText(sc),!
+
+; Application-specific roles
+SET sc = ##class(Security.Users).AddRoles("<username>","NBSSapp")
+WRITE $SYSTEM.Status.GetErrorText(sc),!
+
+SET sc = ##class(Security.Users).AddRoles("<username>","BSSReporting")
+WRITE $SYSTEM.Status.GetErrorText(sc),!
+```
+
+---
+
+## Step 4 — Verify the user was created
+
+Please Change `username` before running this command in the terminal
+
+```objectscript
+DO ##class(Security.Users).Get("<username>",.props)
+WRITE "Roles: ",props("Roles"),!
+WRITE "Enabled: ",props("Enabled"),!
+```
+
+Expected output:
+
+```Caché Terminal
+Roles: %All,%DB_NBSS_DEM,NBSSapp,BSSReporting
+Enabled: 1
+```
+
+---
+
+## Creating a User via the Management Portal
+
+### Step 1 — Open the Management Portal
+
+Open Management Portal
+
+Log in with an existing admin account.
+
+---
+
+### Step 2 — Navigate to Users
+
+Go to: **System Administration → Security → Users**
+
+Click **Create New User**.
+
+---
+
+### Step 3 — Fill in user details
+
+| Field | Value |
+|-------|-------|
+| **Name** | Enter the username |
+| **Password** | Enter a strong password |
+| **Confirm Password** | Re-enter the password |
+| **Enabled** | Tick the checkbox |
+
+---
+
+### Step 4 — Grant admin privileges
+
+On the same page, scroll to the **Roles** section and click **Add**:
+
+- Type `%All` and click **Assign** — this grants full system admin access
+
+To also grant access to specific databases/applications, add any of:
+
+| Role | Access granted | Required |
+|------|---------------|---------|
+| `%All` | Full system admin | 1 |
+| `%DB_..._` | database | 0 |
+| `NBSSapp` | NBSS application | 0 |
+| `BSSReporting` | BSS reporting | 0 |
+
+---
+
+### Step 5 — Save
+
+Click **Save** at the bottom of the page.
+
+You will be returned to the Users list where the new user will appear.
+
+---
+
+### Step 6 — Verify
+
+Click the username in the list and confirm:
+
+- **Enabled** is ticked
+- **Roles** shows the roles you assigned
+
+---
+
+## Notes
+
+- Always connect to `%SYS` namespace for user/security management
+- The `%All` role grants full access including `%SYS` — only assign to trusted admin users
+- `%DB_NBSS_DEM` is auto-generated when the NBSS_DEM database is created
