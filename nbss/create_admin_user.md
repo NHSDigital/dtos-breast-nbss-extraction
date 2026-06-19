@@ -66,10 +66,10 @@ You might be prompted for credentials (Use a user with admin privileges):
 
 ```Caché
 Username: <username>
-Password: <password>>
+Password: <password>
 ```
 
-You should see the `%SYS>` prompt. If not please
+You should see the `%SYS>` prompt. If not, run:
 
 ```Caché Terminal
     ZN "%SYS"
@@ -79,7 +79,7 @@ You should see the `%SYS>` prompt. If not please
 
 ## Step 2 — Create the user
 
-Please Change `username` and  `password` before running this command in the terminal
+ Please change `username` and `password` before running this command in the terminal.
 
 ```Caché Terminal
 SET sc = ##class(Security.Users).Create("<username>","%SYS","<password>")
@@ -104,7 +104,7 @@ WRITE $SYSTEM.Status.GetErrorText(sc),!
 
 Please Change `username` before running this command in the terminal
 
-If you want grant access to additional services such `NBSSapp, BSSReporting, DB_...`
+If you want to grant access to additional services such as `NBSSapp`, `BSSReporting` or database roles like `%DB_NBSS_DEM`:
 
 ```Caché Terminal
 ; NBSS_DEM database access
