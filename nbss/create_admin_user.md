@@ -6,16 +6,20 @@ Three options are available depending on your preference:
 - [Option 2 — Caché Terminal](#option-2--caché-terminal)
 - [Option 3 — Management Portal](#option-3--management-portal)
 
+## Prerequisites
+
+For all options:
+
+- Caché must be running
+- You must know the admin username and password
+
 ---
 
 ## Option 1 — PowerShell script (recommended)
 
+---
+
 A PowerShell script is provided to create a user in one command without opening a terminal session.
-
-### Prerequisites
-
-- Caché must be running
-- You must know the admin username and password
 
 ### Usage
 
@@ -50,11 +54,6 @@ Expected output:
 ---
 
 ## Option 2 — Caché Terminal
-
-### Prerequisites
-
-- Caché must be running
-- You must have admin user
 
 ---
 
