@@ -1,6 +1,57 @@
-# Creating a Caché User via Terminal
+# Creating a Caché User
 
-## Prerequisites
+Three options are available depending on your preference:
+
+- [Option 1 — PowerShell script (recommended)](#option-1--powershell-script-recommended)
+- [Option 2 — Caché Terminal](#option-2--caché-terminal)
+- [Option 3 — Management Portal](#option-3--management-portal)
+
+---
+
+## Option 1 — PowerShell script (recommended)
+
+A PowerShell script is provided to create a user in one command without opening a terminal session.
+
+### Prerequisites
+
+- Caché must be running
+- You must know the admin username and password
+
+### Usage
+
+From the repo root in PowerShell:
+
+```powershell
+    .\nbss\playcd\new_cache_user.ps1`
+        -NewUsername "<username>" `
+        -NewPassword "<password>" `
+        -AdminUser "<admin_username>" `
+        -AdminPassword "<admin_password>"
+```
+
+Expected output:
+
+```text
+    Roles: %All,%DB_NBSS_DEM,NBSSapp,BSSReporting
+    Enabled: 1
+```
+
+### Parameters
+
+| Parameter | Required | Default | Description |
+|---|---|---|---|
+| `-NewUsername` | Yes | — | Username to create |
+| `-NewPassword` | Yes | — | Password for the new user |
+| `-AdminPassword` | Yes | — | Password for the account specified by `-AdminUser` |
+| `-CacheInstance` | No | `CACHE` | Caché instance name |
+| `-AdminUser` | No | `_SYSTEM` | Admin account to authenticate with |
+| `-CsessionPath` | No | `C:\InterSystems\Cache\bin\csession.exe` | Path to csession.exe |
+
+---
+
+## Option 2 — Caché Terminal
+
+### Prerequisites
 
 - Caché must be running
 - You must have admin user
@@ -89,7 +140,7 @@ Enabled: 1
 
 ---
 
-## Creating a User via the Management Portal
+## Option 3 — Management Portal
 
 ### Step 1 — Open the Management Portal
 
