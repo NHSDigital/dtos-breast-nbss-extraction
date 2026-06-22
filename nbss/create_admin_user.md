@@ -21,7 +21,7 @@ For all options:
 
 A PowerShell script is provided to create a user in one command without opening a terminal session.
 
-### Usage
+### Step 1 - Execute PoowerShell Script
 
 From the repo root in PowerShell:
 
@@ -31,13 +31,6 @@ From the repo root in PowerShell:
         -NewPassword "<password>" `
         -AdminUser "<admin_username>" `
         -AdminPassword "<admin_password>"
-```
-
-Expected output:
-
-```text
-    Roles: %All,%DB_NBSS_DEM,NBSSapp,BSSReporting
-    Enabled: 1
 ```
 
 ### Parameters
@@ -50,6 +43,12 @@ Expected output:
 | `-CacheInstance` | No | `CACHE` | Caché instance name |
 | `-AdminUser` | No | `_SYSTEM` | Admin account to authenticate with |
 | `-CsessionPath` | No | `C:\InterSystems\Cache\bin\csession.exe` | Path to csession.exe |
+
+---
+
+### Step 2 — Reset Frontend password
+
+You need to open NBSS Test. A box will appear where you enter `<username>` and for the password enter `PASSWORD` as the default. You will be requested to create a new password.
 
 ---
 
@@ -98,13 +97,17 @@ Please change `username` (username used from step 1) before running this command
     WRITE `$SYSTEM.Status.GetErrorText(sc),!
 ```
 
+## Step 4 — Reset Frontend password
+
+You need to open NBSS Test. A box will appear where you enter `<username>` and for the password enter `PASSWORD` as the default. You will be requested to create a new password.
+
 ---
 
 ## Option 3 — Management Portal (Only Backend User)
 
 ### Step 1 — Open the Management Portal
 
-Open Management Portal
+Open the Management Portal
 
 Log in with an existing admin account.
 
