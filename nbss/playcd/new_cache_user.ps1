@@ -1,10 +1,7 @@
 .DESCRIPTION
 Creates a new user in both the Caché backend (%SYS) and the NBSS frontend application (NBSS_DEM).
-    Step 1 — Registers the user as a Caché system user in %SYS with the roles needed
-             to connect to the NBSS_DEM database.
-    Step 2 — Creates the corresponding NBSS application user in the UTIL.Users table
-             so the user can log in to the NBSS frontend. On first login, NBSS will
-             prompt the user to set a new password.
+    Step 1 — Registers the user as a Caché system user in %SYS with the roles needed  to connect to the NBSS_DEM database.
+    Step 2 — Creates the corresponding NBSS application user in the UTIL.Users table so the user can log in to the NBSS frontend. On first login, NBSS will prompt the user to set a new password.
 #>
 
 [CmdletBinding()]
