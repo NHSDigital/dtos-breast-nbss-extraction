@@ -6,6 +6,7 @@ Creates a new user in both the Caché backend (%SYS) and the NBSS frontend appli
              so the user can log in to the NBSS frontend. On first login, NBSS will
              prompt the user to set a new password.
 #>
+
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][string]$NewUsername,
