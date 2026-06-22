@@ -10,24 +10,39 @@ param(
 
 # csession does not support -P for password.
 # We pipe the username and password as interactive input, followed by the COS commands.
-$script = @"
+$sysScript = @"
 $AdminUser
 $AdminPassword
 ZN ""%SYS""
 SET sc = ##class(Security.Users).Create("$NewUsername","%SYS","$NewPassword")
 WRITE `$SYSTEM.Status.GetErrorText(sc),!
 SET sc = ##class(Security.Users).AddRoles("$NewUsername","%All")
-WRITE `$SYSTEM.Status.GetErrorText(sc),!
-SET sc = ##class(Security.Users).AddRoles("$NewUsername","%DB_NBSS_DEM")
-WRITE `$SYSTEM.Status.GetErrorText(sc),!
-SET sc = ##class(Security.Users).AddRoles("$NewUsername","NBSSapp")
-WRITE `$SYSTEM.Status.GetErrorText(sc),!
-SET sc = ##class(Security.Users).AddRoles("$NewUsername","BSSReporting")
-WRITE `$SYSTEM.Status.GetErrorText(sc),!
 DO ##class(Security.Users).Get("$NewUsername",.props)
 WRITE "Roles: ",props("Roles"),!
 WRITE "Enabled: ",props("Enabled"),!
 HALT
 "@
 
-$script | & $CsessionPath $CacheInstance -U "%SYS"
+Write-Host "--- Creating Cache system user in %SYS ---"
+$sysScript | & $CsessionPath $CacheInstance -U "%SYS"
+
+$nbssScript = @"
+$AdminUser
+$AdminPassword
+ZN "NBSS_DEM"
+SET obj = ##class(UTIL.Users).%New()
+SET obj.UserId = "$NewUsername"
+SET obj.UserForename = "NBSS"
+SET obj.UserSurname = "Extraction"
+SET obj.UserGroupId             = "SOM"
+SET obj.UserSystemManager       = 1
+SET obj.UserDisabled            = 0
+SET obj.UserForcePasswordChange = 1
+SET obj.ResetPassword           = 1
+SET sc = obj.%Save()
+WRITE `$SYSTEM.Status.GetErrorText(sc),!
+HALT
+"@
+
+Write-Host "--- Creating NBSS application user in NBSS_DEM ---"
+$nbssScript | & $CsessionPath $CacheInstance -U "NBSS_DEM"
