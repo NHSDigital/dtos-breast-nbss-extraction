@@ -4,7 +4,7 @@ Three options are available depending on your preference:
 
 - [Option 1 — PowerShell script (recommended)](#option-1--powershell-script-recommended)
 - [Option 2 — Caché Terminal](#option-2--caché-terminal)
-- [Option 3 — Management Portal](#option-3--management-portal)
+- [Option 3 — Management Portal](#option-3--management-portal-only-backend-user)
 
 ## Prerequisites
 
@@ -59,87 +59,48 @@ Expected output:
 
 ## Step 1 — Open a Caché terminal session
 
-On Caché Terminal
+In the Caché Terminal, you might be prompted for credentials (use a user with admin privileges).
 
-You might be prompted for credentials (Use a user with admin privileges):
+---
 
-```Caché
-Username: <username>
-Password: <password>
-```
+## Step 2 — Create the user (Backend User)
 
-You should see the `%SYS>` prompt. If not, run:
+Please change `username` and `password` before running this command in the terminal.
 
 ```Caché Terminal
     ZN "%SYS"
+    SET sc = ##class(Security.Users).Create("<username>","%SYS","<password>")
+    WRITE `$SYSTEM.Status.GetErrorText(sc),!
+    SET sc = ##class(Security.Users).AddRoles("<username>","%All")
+    DO ##class(Security.Users).Get("<username>",.props)
+    WRITE "Roles: ",props("Roles"),!
+    WRITE "Enabled: ",props("Enabled"),!
 ```
 
 ---
 
-## Step 2 — Create the user
+## Step 3 — Create the user (Frontend User)
 
- Please change `username` and `password` before running this command in the terminal.
-
-```Caché Terminal
-SET sc = ##class(Security.Users).Create("<username>","%SYS","<password>")
-WRITE $SYSTEM.Status.GetErrorText(sc),!
-```
-
-A blank line means success. Any error text indicates a problem.
-
----
-
-## Step 3 — Grant roles
-
-Please Change `username` before running this command in the terminal
+Please change `username` (username used from step 1) before running this command in the terminal.
 
 ```Caché Terminal
-; Full system admin
-SET sc = ##class(Security.Users).AddRoles("<username>","%All")
-WRITE $SYSTEM.Status.GetErrorText(sc),!
-```
-
-### Optional
-
-Please Change `username` before running this command in the terminal
-
-If you want to grant access to additional services such as `NBSSapp`, `BSSReporting` or database roles like `%DB_NBSS_DEM`:
-
-```Caché Terminal
-; NBSS_DEM database access
-SET sc = ##class(Security.Users).AddRoles("<username>","%DB_NBSS_DEM")
-WRITE $SYSTEM.Status.GetErrorText(sc),!
-
-; Application-specific roles
-SET sc = ##class(Security.Users).AddRoles("<username>","NBSSapp")
-WRITE $SYSTEM.Status.GetErrorText(sc),!
-
-SET sc = ##class(Security.Users).AddRoles("<username>","BSSReporting")
-WRITE $SYSTEM.Status.GetErrorText(sc),!
+    ZN "NBSS_DEM"
+    SET obj = ##class(UTIL.Users).%New()
+    SET obj.UserId = "<username>"
+    SET obj.UserForename = "NBSS"
+    SET obj.UserSurname = "Extraction"
+    SET obj.UserGroupId             = "SOM"
+    SET obj.UserSystemManager       = 1
+    SET obj.UserDisabled            = 0
+    SET obj.UserForcePasswordChange = 1
+    SET obj.ResetPassword           = 1
+    SET sc = obj.%Save()
+    WRITE `$SYSTEM.Status.GetErrorText(sc),!
 ```
 
 ---
 
-## Step 4 — Verify the user was created
-
-Please Change `username` before running this command in the terminal
-
-```objectscript
-DO ##class(Security.Users).Get("<username>",.props)
-WRITE "Roles: ",props("Roles"),!
-WRITE "Enabled: ",props("Enabled"),!
-```
-
-Expected output:
-
-```Caché Terminal
-Roles: %All,%DB_NBSS_DEM,NBSSapp,BSSReporting
-Enabled: 1
-```
-
----
-
-## Option 3 — Management Portal
+## Option 3 — Management Portal (Only Backend User)
 
 ### Step 1 — Open the Management Portal
 
