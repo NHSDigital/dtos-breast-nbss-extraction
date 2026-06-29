@@ -18,7 +18,7 @@ az --version
 
 ---
 
-## Step 1 — Login to Azure CLI
+## Step 1 — Log in to Azure CLI
 
 Ensure you are logged in before running commands.
 
