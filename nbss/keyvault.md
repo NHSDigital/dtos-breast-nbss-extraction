@@ -2,7 +2,7 @@
 
 All commands are written for **WSL Bash** (or Azure Cloud Shell Bash).
 
-This guide describes how to create, retrieve, and set role-based access control for users or groups (BSO) to secrets in Azure Key Vault.
+This guide describes how to create, retrieve, and set role-based access control for users or groups (BSO) on secrets in Azure Key Vault.
 
 ## Prerequisites
 
