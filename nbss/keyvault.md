@@ -9,7 +9,7 @@ This guide describes how to create, retrieve, and set role-based access control 
 - An Azure Key Vault already exists.
 - Azure CLI is installed (for example, via uv).
 
-If Azure CLI is not installed, please install [Azure cli](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-linux?view=azure-cli-latest&pivots=apt)
+If Azure CLI is not installed, please install [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-linux?view=azure-cli-latest&pivots=apt)
 
 ---
 
