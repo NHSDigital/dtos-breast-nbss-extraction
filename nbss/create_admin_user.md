@@ -69,7 +69,7 @@ Replace `username` and `password` before running this command in the terminal.
 ```Caché Terminal
     ZN "%SYS"
     SET sc = ##class(Security.Users).Create("<username>","%SYS","<password>")
-    WRITE `$SYSTEM.Status.GetErrorText(sc),!
+    WRITE $SYSTEM.Status.GetErrorText(sc),!
     SET sc = ##class(Security.Users).AddRoles("<username>","%All")
     DO ##class(Security.Users).Get("<username>",.props)
     WRITE "Roles: ",props("Roles"),!
@@ -94,7 +94,7 @@ Replace `username` (the username from Step 1) before running this command in the
     SET obj.UserForcePasswordChange = 1
     SET obj.ResetPassword           = 1
     SET sc = obj.%Save()
-    WRITE `$SYSTEM.Status.GetErrorText(sc),!
+    WRITE $SYSTEM.Status.GetErrorText(sc),!
 ```
 
 ## Step 4 — Reset Frontend password
