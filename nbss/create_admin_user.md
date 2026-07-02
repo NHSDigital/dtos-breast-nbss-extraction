@@ -21,7 +21,7 @@ For all options:
 
 A PowerShell script is provided to create a user in one command without opening a terminal session.
 
-### Step 1 - Execute PoowerShell Script
+### Step 1 — Execute the PowerShell script
 
 From the repo root in PowerShell:
 
@@ -64,7 +64,7 @@ In the Caché Terminal, you might be prompted for credentials (use a user with a
 
 ## Step 2 — Create the user (Backend User)
 
-Please change `username` and `password` before running this command in the terminal.
+Replace `username` and `password` before running this command in the terminal.
 
 ```Caché Terminal
     ZN "%SYS"
@@ -80,7 +80,7 @@ Please change `username` and `password` before running this command in the termi
 
 ## Step 3 — Create the user (Frontend User)
 
-Please change `username` (username used from step 1) before running this command in the terminal.
+Replace `username` (the username from Step 1) before running this command in the terminal.
 
 ```Caché Terminal
     ZN "NBSS_DEM"
