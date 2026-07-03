@@ -12,6 +12,7 @@ For all options:
 
 - Caché must be running
 - You must know the admin username and password
+- The new username must be entered in UPPERCASE letters only
 
 ---
 
@@ -37,8 +38,8 @@ From the repo root in PowerShell:
 
 | Parameter | Required | Default | Description |
 |---|---|---|---|
-| `-NewUsername` | Yes | — | Username to create |
-| `-NewPassword` | Yes | — | Password for the new user |
+| `-NewUsername` | Yes | — | Username to create (UPPERCASE only) |
+| `-NewPassword` | Yes | — | Password for the new user|
 | `-AdminPassword` | Yes | — | Password for the account specified by `-AdminUser` |
 | `-CacheInstance` | No | `CACHE` | Caché instance name |
 | `-AdminUser` | No | `_SYSTEM` | Admin account to authenticate with |
@@ -64,7 +65,7 @@ In the Caché Terminal, you might be prompted for credentials (use a user with a
 
 ## Step 2 — Create the user (Backend User)
 
-Replace `username` and `password` before running this command in the terminal.
+Replace `username` (UPPERCASE only) and `password` before running this command in the terminal. The username must be UPPERCASE.
 
 ```Caché Terminal
     ZN "%SYS"
@@ -80,7 +81,7 @@ Replace `username` and `password` before running this command in the terminal.
 
 ## Step 3 — Create the user (Frontend User)
 
-Replace `username` (the username from Step 1) before running this command in the terminal.
+Replace `username` (the username from Step 1) before running this command in the terminal. The username must be UPPERCASE.
 
 ```Caché Terminal
     ZN "NBSS_DEM"
@@ -125,7 +126,7 @@ Click **Create New User**.
 
 | Field | Value |
 |-------|-------|
-| **Name** | Enter the username |
+| **Name** | Enter the username (UPPERCASE only) |
 | **Password** | Enter a strong password |
 | **Confirm Password** | Re-enter the password |
 | **Enabled** | Tick the checkbox |
