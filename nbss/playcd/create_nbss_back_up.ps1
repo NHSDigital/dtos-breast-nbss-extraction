@@ -6,13 +6,13 @@
     This script performs the following steps:
       1. Stops the running InterSystems Caché instance.
       2. Creates a zip archive containing:
-           - NBSS\Attachments  (all contents)
-           - NBSS\Letters      (all contents)
-           - NBSS\Labels       (all contents)
-           - All CACHE.DAT database files found under InterSystems\Cache
-           - InterSystems\Cache\mgr\BACKUP_CACHE.DAT (latest backup only)
+            - NBSS\Attachments  (all contents)
+            - NBSS\Letters      (all contents)
+            - NBSS\Labels       (all contents)
+            - All CACHE.DAT database files found under InterSystems\Cache
+            - InterSystems\Cache\mgr\BACKUP_CACHE.DAT (latest backup only)
       3. Saves the zip to the same folder the script is run from, named:
-             NBSS_Backup_YYYYMMDD_HHmm.zip
+            NBSS_Backup_YYYYMMDD_HHmm.zip
       4. Restarts the Caché instance once the zip is complete.
 
     Use the -NbssRoot and -CacheRoot parameters if NBSS or InterSystems

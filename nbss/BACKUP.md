@@ -96,7 +96,7 @@ Cache/
 - If Caché fails to restart within 60 seconds, the script will throw an error — start Caché manually via the Management Portal or Services if this occurs
 - Numbered backup variants (`BACKUP_CACHE_1.DAT`, `BACKUP_CACHE_2.DAT`, etc.) are intentionally excluded — only `BACKUP_CACHE.DAT` is included as it represents the latest backup
 - To view the built-in help from PowerShell:
-  
+
   ```powershell
   Get-Help .\create_nbss_back_up.ps1 -Full
   ```
