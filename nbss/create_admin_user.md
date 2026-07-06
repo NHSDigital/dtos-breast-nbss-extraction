@@ -38,11 +38,11 @@ From the repo root in PowerShell:
 
 | Parameter | Required | Default | Description |
 |---|---|---|---|
-| `-NewUsername` | Yes | — | Username to create (UPPERCASE only) |
-| `-NewPassword` | Yes | — | Password for the new user|
+| `-NewUsername` | Yes | — | Username to create |
+| `-NewPassword` | Yes | — | Password for the new user |
+| `-AdminUser` | No | `_SYSTEM` | Admin account to authenticate with |
 | `-AdminPassword` | Yes | — | Password for the account specified by `-AdminUser` |
 | `-CacheInstance` | No | `CACHE` | Caché instance name |
-| `-AdminUser` | No | `_SYSTEM` | Admin account to authenticate with |
 | `-CsessionPath` | No | `C:\InterSystems\Cache\bin\csession.exe` | Path to csession.exe |
 
 ---
@@ -57,13 +57,13 @@ You need to open NBSS Test. A box will appear where you enter `<username>` and f
 
 ---
 
-## Step 1 — Open a Caché terminal session
+### Step 1 — Open a Caché terminal session
 
 In the Caché Terminal, you might be prompted for credentials (use a user with admin privileges).
 
 ---
 
-## Step 2 — Create the user (Backend User)
+### Step 2 — Create the user (Backend User)
 
 Replace `username` (UPPERCASE only) and `password` before running this command in the terminal. The username must be UPPERCASE.
 
@@ -79,7 +79,7 @@ Replace `username` (UPPERCASE only) and `password` before running this command i
 
 ---
 
-## Step 3 — Create the user (Frontend User)
+### Step 3 — Create the user (Frontend User)
 
 Replace `username` (the username from Step 1) before running this command in the terminal. The username must be UPPERCASE.
 
@@ -98,7 +98,7 @@ Replace `username` (the username from Step 1) before running this command in the
     WRITE $SYSTEM.Status.GetErrorText(sc),!
 ```
 
-## Step 4 — Reset Frontend password
+### Step 4 — Reset Frontend password
 
 You need to open NBSS Test. A box will appear where you enter `<username>` and for the password enter `PASSWORD` as the default. You will be requested to create a new password.
 
