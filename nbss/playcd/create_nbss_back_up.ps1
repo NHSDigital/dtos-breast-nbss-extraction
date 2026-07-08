@@ -69,8 +69,9 @@ Write-Log "Cache root  : $CacheRoot"
 
 # Stop Cache
 Write-Log "Stopping Cache..."
+$LASTEXITCODE = 0
 & $ccontrol stop CACHE quietly
-if ($LASTEXITCODE -ne 0) { throw "Failed to stop Cache via ccontrol (exit code $LASTEXITCODE). Check -CacheRoot and the Caché instance name." }
+if ($LASTEXITCODE -ne 0) { throw "Failed to stop Cache via ccontrol (exit code $LASTEXITCODE). Check -CacheRoot and the Cache instance name." }
 $waited = 0
 while ((Get-Process -Name "cache" -ErrorAction SilentlyContinue) -and $waited -lt 60) {
     Start-Sleep -Seconds 5; $waited += 5
@@ -79,54 +80,72 @@ while ((Get-Process -Name "cache" -ErrorAction SilentlyContinue) -and $waited -l
 if (Get-Process -Name "cache" -ErrorAction SilentlyContinue) { throw "Cache did not stop in time." }
 Write-Log "Cache stopped."
 
-# Build zip
-Write-Log "Creating zip: $zipPath"
-Add-Type -AssemblyName System.IO.Compression
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-$zip = [System.IO.Compression.ZipFile]::Open($zipPath, 'Create')
-
+# Caché was stopped — guarantee a restart attempt regardless of what happens next
+$cacheRestartError = $null
 try {
-    # NBSS folders — strip NbssRoot from path to build zip entry name
-    foreach ($folder in @("Attachments","Letters","Labels")) {
-        $fullFolder = Join-Path $NbssRoot $folder
-        if (-not (Test-Path $fullFolder)) { Write-Log "Skipping (not found): $fullFolder"; continue }
-        Get-ChildItem $fullFolder -Recurse -File | ForEach-Object {
-            $entry = $_.FullName.Substring(($NbssRoot.TrimEnd('\') + '\').Length).Replace("\","/")
-            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName, $entry, 'Optimal') | Out-Null
+    # Build zip
+    Write-Log "Creating zip: $zipPath"
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $zip = [System.IO.Compression.ZipFile]::Open($zipPath, 'Create')
+
+    try {
+        # NBSS folders — strip NbssRoot from path to build zip entry name
+        foreach ($folder in @("Attachments","Letters","Labels")) {
+            $fullFolder = Join-Path $NbssRoot $folder
+            if (-not (Test-Path $fullFolder)) { Write-Log "Skipping (not found): $fullFolder"; continue }
+            Get-ChildItem $fullFolder -Recurse -File | ForEach-Object {
+                $entry = $_.FullName.Substring(($NbssRoot.TrimEnd('\') + '\').Length).Replace("\","/")
+                [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName, $entry, 'Optimal') | Out-Null
+            }
+            Write-Log "Added: $fullFolder"
         }
-        Write-Log "Added: $fullFolder"
+
+        # CACHE.DAT files — strip CacheRoot from path to build zip entry name
+        Get-ChildItem $cacheDat -Recurse -Filter "CACHE.DAT" -ErrorAction SilentlyContinue | ForEach-Object {
+            $entry = $_.FullName.Substring(($CacheRoot.TrimEnd('\') + '\').Length).Replace("\","/")
+            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName, $entry, 'Optimal') | Out-Null
+            Write-Log "Added: $entry ($([math]::Round($_.Length/1MB,1)) MB)"
+        }
+
+        # BACKUP_CACHE.DAT (exact name only — excludes BACKUP_CACHE_1.DAT, BACKUP_CACHE_2.DAT, etc.)
+        if (Test-Path $backupDat) {
+            $entry = $backupDat.Substring(($CacheRoot.TrimEnd('\') + '\').Length).Replace("\","/")
+            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $backupDat, $entry, 'Optimal') | Out-Null
+            Write-Log "Added: $entry ($([math]::Round((Get-Item $backupDat).Length/1MB,1)) MB)"
+        } else {
+            Write-Log "Skipping (not found): $backupDat"
+        }
+    } finally {
+        $zip.Dispose()
     }
 
-    # CACHE.DAT files — strip CacheRoot from path to build zip entry name
-    Get-ChildItem $cacheDat -Recurse -Filter "CACHE.DAT" -ErrorAction SilentlyContinue | ForEach-Object {
-        $entry = $_.FullName.Substring(($CacheRoot.TrimEnd('\') + '\').Length).Replace("\","/")
-        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName, $entry, 'Optimal') | Out-Null
-        Write-Log "Added: $entry ($([math]::Round($_.Length/1MB,1)) MB)"
-    }
-
-    # BACKUP_CACHE.DAT (exact name only — excludes BACKUP_CACHE_1.DAT, BACKUP_CACHE_2.DAT, etc.)
-    if (Test-Path $backupDat) {
-        $entry = $backupDat.Substring(($CacheRoot.TrimEnd('\') + '\').Length).Replace("\","/")
-        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $backupDat, $entry, 'Optimal') | Out-Null
-        Write-Log "Added: $entry ($([math]::Round((Get-Item $backupDat).Length/1MB,1)) MB)"
-    } else {
-        Write-Log "Skipping (not found): $backupDat"
-    }
+    Write-Log "Backup complete: $zipPath ($([math]::Round((Get-Item $zipPath).Length/1MB,2)) MB)"
 } finally {
-    $zip.Dispose()
+    # Restart Caché — runs even if zip creation threw an exception.
+    # Failures are recorded in $cacheRestartError and thrown after this block so
+    # they do not suppress any in-flight zip exception.
+    Write-Log "Restarting Cache..."
+    $LASTEXITCODE = 0
+    & $ccontrol start CACHE
+    if ($LASTEXITCODE -ne 0) {
+        $cacheRestartError = "ccontrol failed to start Cache (exit code $LASTEXITCODE). Please start it manually."
+        Write-Log "ERROR: $cacheRestartError"
+    } else {
+        $waited = 0
+        while (-not (Get-Process -Name "cache" -ErrorAction SilentlyContinue) -and $waited -lt 60) {
+            Start-Sleep -Seconds 5; $waited += 5
+            Write-Log "Waiting for Cache to start... ($waited s)"
+        }
+        if (-not (Get-Process -Name "cache" -ErrorAction SilentlyContinue)) {
+            $cacheRestartError = "Cache did not start in time. Please start it manually."
+            Write-Log "ERROR: $cacheRestartError"
+        } else {
+            Write-Log "Cache restarted successfully."
+        }
+    }
 }
 
-Write-Log "Backup complete: $zipPath ($([math]::Round((Get-Item $zipPath).Length/1MB,2)) MB)"
-
-# Restart Caché
-Write-Log "Restarting Cache..."
-& $ccontrol start CACHE
-$waited = 0
-while (-not (Get-Process -Name "cache" -ErrorAction SilentlyContinue) -and $waited -lt 60) {
-    Start-Sleep -Seconds 5; $waited += 5
-    Write-Log "Waiting for Cache to start... ($waited s)"
-}
-if (-not (Get-Process -Name "cache" -ErrorAction SilentlyContinue)) {
-    throw "Cache did not start in time. Please start it manually."
-}
-Write-Log "Cache restarted successfully."
+# Deferred throw: only reached when no zip exception propagated; surfaces the
+# restart failure as a proper terminating error rather than a silent log line.
+if ($cacheRestartError) { throw $cacheRestartError }
