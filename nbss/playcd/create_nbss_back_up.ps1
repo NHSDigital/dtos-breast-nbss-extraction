@@ -12,11 +12,15 @@
             - All CACHE.DAT database files found under InterSystems\Cache
             - InterSystems\Cache\mgr\BACKUP_CACHE.DAT (latest backup only)
       3. Saves the zip to the same folder the script is run from, named:
-            NBSS_Backup_YYYYMMDD_HHmmss.zip
+            NBSS_<BsoCode>_Backup_YYYYMMDD_HHmmss.zip
       4. Restarts the Caché instance once the zip is complete.
 
     Use the -NbssRoot and -CacheRoot parameters if NBSS or InterSystems
     are installed on a different drive to the default (C:\).
+
+.PARAMETER BsoCode
+    BSO code to embed in the backup filename  e.g. A0001344.
+    Defaults to "A000".
 
 .PARAMETER NbssRoot
     Root folder where NBSS is installed. Defaults to C:\NBSS.
@@ -26,15 +30,15 @@
 
 .EXAMPLE
     # Run with defaults (both on C:\)
-    .\create_nbss_back_up.ps1
+    .\create_nbss_back_up.ps1 -BsoCode "A0001344"
 
 .EXAMPLE
     # NBSS on D:\ and InterSystems on E:\
-    .\create_nbss_back_up.ps1 -NbssRoot "D:\NBSS" -CacheRoot "E:\InterSystems"
+    .\create_nbss_back_up.ps1 -BsoCode "A0001344" -NbssRoot "D:\NBSS" -CacheRoot "E:\InterSystems"
 
 .EXAMPLE
     # Only NBSS is on a different drive
-    .\create_nbss_back_up.ps1 -NbssRoot "D:\NBSS"
+    .\create_nbss_back_up.ps1 -BsoCode "A0001344" -NbssRoot "D:\NBSS"
 
 .NOTES
     Must be run as Administrator.
@@ -43,6 +47,8 @@
 
 #Requires -RunAsAdministrator
 param (
+    # BSO code to embed in the backup filename  e.g. A0001344
+    [string]$BsoCode    = "A000",
     # Root path where NBSS is installed  e.g. C:\NBSS or D:\NBSS
     [string]$NbssRoot   = "C:\NBSS",
     # Root path where InterSystems Cache is installed  e.g. C:\InterSystems or D:\InterSystems
@@ -60,7 +66,7 @@ if (-not (Test-Path $ccontrol)) { throw "ccontrol.exe not found at '$ccontrol'. 
 if (-not (Test-Path $cacheDat)) { throw "Cache folder not found at '$cacheDat'. Verify -CacheRoot." }
 
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-$zipPath   = Join-Path $PSScriptRoot "NBSS_Backup_$timestamp.zip"
+$zipPath   = Join-Path $PSScriptRoot "NBSS_${BsoCode}_Backup_$timestamp.zip"
 
 function Write-Log { param([string]$m) Write-Host "[$(Get-Date -Format 'HH:mm:ss')] $m" }
 

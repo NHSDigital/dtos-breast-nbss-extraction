@@ -70,7 +70,74 @@ This will save the tables as .csv into the folder `\cache_data_export`
 - run `cd <path from above>`
 - run `py -3.12-32 export_app_tables.py`
 
-## NBSS Backup Script
+## NBSS Backup
+
+This section describes how to manually trigger a backup via the Caché Terminal. This should be run if the overnight backup has not completed before taking the [NBSS Zip Back Up](#nbss-zip-back-up-file-script).
+
+Open the Caché Terminal and run:
+
+```Caché Terminal
+ZN "%SYS"
+DO ^BACKUP
+```
+
+The following menu will appear:
+
+```OUTPUT
+1) Backup
+2) Restore ALL
+3) Restore Selected or Renamed Directories
+4) Edit/Display List of Directories for Backups
+5) Abort Backup
+6) Display Backup volume information
+7) Monitor progress of backup or restore
+```
+
+Select `1`.
+
+```OUTPUT
+                 Cache Backup Utility
+              --------------------------
+What kind of backup:
+   1. Full backup of all in-use blocks
+   2. Incremental since last backup
+   3. Cumulative incremental since last full backup
+   4. Exit the backup program
+1 =>
+```
+
+Select `1` — a full backup is currently used to capture everything.
+
+```OUTPUT
+Specify output device (type STOP to exit)
+Device: c:\intersystems\cache\mgr\n =>
+```
+
+Type `BACKUP_CACHE.DAT`.
+
+```OUTPUT
+File exists, do you want to overwrite it <N>?Y
+Backing up to device: c:\intersystems\cache\mgr\BACKUP_CACHE.DAT
+Description:
+```
+
+Follow the remaining prompts as shown and the backup will commence.
+
+```OUTPUT
+Backing up the following directories:
+ c:\intersystems\cache\mgr\
+ c:\intersystems\cache\mgr\cache\
+ c:\intersystems\cache\mgr\cacheaudit\
+ c:\intersystems\cache\mgr\user\
+ c:\nbss\cache\dem_app\
+ c:\nbss\cache\dem_dat\
+
+Start the Backup (y/n)? =>
+```
+
+Select `y` and the backup process will begin.
+
+## NBSS Zip Back Up File Script
 
 ### Overview
 
@@ -83,7 +150,7 @@ The `create_nbss_back_up.ps1` PowerShell script creates automated, timestamped b
    - NBSS\Labels (all contents)
    - All CACHE.DAT database files from InterSystems\Cache
    - BACKUP_CACHE.DAT (the latest backup file)
-3. **Saves the backup** with a timestamped filename: `NBSS_Backup_YYYYMMDD_HHmmss.zip`
+3. **Saves the backup** with a timestamped filename: `NBSS_<BsoCode>_Backup_YYYYMMDD_HHmmss.zip`  (default: `NBSS_A000_Backup_YYYYMMDD_HHmmss.zip`)
 4. **Restarts the Caché instance** — Automatically brings the database back online
 
 This ensures you have a complete, point-in-time backup of your NBSS data and database state.
@@ -109,11 +176,13 @@ The `.bat` wrapper file (`create_nbss_back_up.bat`) **bypasses this restriction*
 - **Administrator privileges** — The script must run as Administrator to stop/start the Caché service
 - **InterSystems Caché** — Must be installed at the specified CacheRoot path
 - **NBSS installation** — Must exist at the specified NbssRoot path
+- **Backup Process** — A manual backup must have been recently run via the [NBSS Backup](#nbss-backup) steps before proceeding
 
 #### Parameters
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
+| `-BsoCode` | `A000` | BSO code embedded in the backup zip filename |
 | `-NbssRoot` | `C:\NBSS` | Root folder where NBSS is installed |
 | `-CacheRoot` | `C:\InterSystems` | Root folder where InterSystems Cache is installed |
 
@@ -125,26 +194,35 @@ From `nbss/playcd`:
 .\create_nbss_back_up.bat
 ```
 
-Runs with default paths:
+Runs with default paths and default BSO code (`A000`):
 
 - NBSS: `C:\NBSS`
 - InterSystems Cache: `C:\InterSystems`
+- Output filename: `NBSS_A000_Backup_YYYYMMDD_HHmmss.zip`
+
+#### With a BSO Code
+
+```batch
+.\create_nbss_back_up.bat -BsoCode "A0001344"
+```
+
+Output filename: `NBSS_A0001344_Backup_YYYYMMDD_HHmmss.zip`
 
 #### With Custom Paths
 
 ```batch
-.\create_nbss_back_up.bat -NbssRoot "D:\NBSS" -CacheRoot "E:\InterSystems"
+.\create_nbss_back_up.bat -BsoCode "A0001344" -NbssRoot "D:\NBSS" -CacheRoot "E:\InterSystems"
 ```
 
 #### With Only One Custom
 
 ```batch
-.\create_nbss_back_up.bat -NbssRoot "D:\NBSS"
+.\create_nbss_back_up.bat -BsoCode "A0001344" -NbssRoot "D:\NBSS"
 ```
 
 ### Output
 
-The script creates a zip file in the same directory as the batch file with the format `NBSS_Backup_20260707_143015.zip`
+The script creates a zip file in the same directory as the batch file with the format `NBSS_A000_Backup_20260707_143015.zip` (using the default BSO code).
 
 Example output:
 
@@ -153,11 +231,11 @@ Example output:
 [14:30:15] Cache root  : C:\InterSystems
 [14:30:15] Stopping Cache...
 [14:30:20] Cache stopped.
-[14:30:20] Creating zip: C:\path\to\NBSS_Backup_20260707_1430.zip
+[14:30:20] Creating zip: C:\path\to\NBSS_A000_Backup_20260707_1430.zip
 [14:30:45] Added: NBSS\Attachments
 [14:30:50] Added: Cache\mgr\CACHE.DAT (2500.5 MB)
 [14:31:00] Added: Cache\mgr\BACKUP_CACHE.DAT (1200.3 MB)
-[14:31:05] Backup complete: C:\path\to\NBSS_Backup_20260707_143015.zip (3700.80 MB)
+[14:31:05] Backup complete: C:\path\to\NBSS_A000_Backup_20260707_143015.zip (3700.80 MB)
 [14:31:10] Restarting Cache...
 [14:31:15] Cache restarted successfully.
 ```
