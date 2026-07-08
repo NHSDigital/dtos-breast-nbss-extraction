@@ -36,11 +36,13 @@ PowerShell script (`create_nbss_back_up.ps1`) to create a timestamped zip backup
 
 ## Usage
 
+You can run the `.ps1` directly, but if PowerShell execution policy blocks it (e.g., "The file is not digitally signed"), use the wrapper `create_nbss_back_up.bat` (it invokes PowerShell with `-ExecutionPolicy Bypass`).
+
 ### Run with defaults (both on C:\)
 
-```powershell
-.\create_nbss_back_up.ps1
-```
+~~~powershell
+.\create_nbss_back_up.bat
+~~~
 
 ### NBSS on D:\ and InterSystems on E:\
 
