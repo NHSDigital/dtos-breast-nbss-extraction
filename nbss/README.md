@@ -142,7 +142,7 @@ Runs with default paths:
 
 ### Output
 
-The script creates a zip file in the same directory as the batch file with the format `NBSS_Backup_20260707_1430.zip`
+The script creates a zip file in the same directory as the batch file with the format `NBSS_Backup_20260707_143015.zip`
 
 Example output:
 
