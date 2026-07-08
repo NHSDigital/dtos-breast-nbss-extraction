@@ -1,4 +1,4 @@
-# NBSS Caché Back Up
+# NBSS Caché Backup
 
 PowerShell script (`create_nbss_back_up.ps1`) to create a timestamped zip backup of NBSS folders and InterSystems Caché database files.
 
