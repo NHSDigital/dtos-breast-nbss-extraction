@@ -56,6 +56,9 @@ $ccontrol  = Join-Path $CacheRoot "Cache\bin\ccontrol.exe"
 $cacheDat  = Join-Path $CacheRoot "Cache"
 $backupDat = Join-Path $CacheRoot "Cache\mgr\BACKUP_CACHE.DAT"
 
+if (-not (Test-Path $ccontrol)) { throw "ccontrol.exe not found at '$ccontrol'. Verify -CacheRoot." }
+if (-not (Test-Path $cacheDat)) { throw "Cache folder not found at '$cacheDat'. Verify -CacheRoot." }
+
 $timestamp = Get-Date -Format "yyyyMMdd_HHmm"
 $zipPath   = Join-Path $PSScriptRoot "NBSS_Backup_$timestamp.zip"
 
