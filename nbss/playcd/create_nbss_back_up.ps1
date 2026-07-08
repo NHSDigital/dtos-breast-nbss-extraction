@@ -67,6 +67,7 @@ Write-Log "Cache root  : $CacheRoot"
 # Stop Cache
 Write-Log "Stopping Cache..."
 & $ccontrol stop CACHE quietly
+if ($LASTEXITCODE -ne 0) { throw "Failed to stop Cache via ccontrol (exit code $LASTEXITCODE). Check -CacheRoot and the Caché instance name." }
 $waited = 0
 while ((Get-Process -Name "cache" -ErrorAction SilentlyContinue) -and $waited -lt 60) {
     Start-Sleep -Seconds 5; $waited += 5
