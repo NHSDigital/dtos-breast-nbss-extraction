@@ -83,7 +83,7 @@ The `create_nbss_back_up.ps1` PowerShell script creates automated, timestamped b
    - NBSS\Labels (all contents)
    - All CACHE.DAT database files from InterSystems\Cache
    - BACKUP_CACHE.DAT (the latest backup file)
-3. **Saves the backup** with a timestamped filename: `NBSS_Backup_YYYYMMDD_HHmm.zip`
+3. **Saves the backup** with a timestamped filename: `NBSS_Backup_YYYYMMDD_HHmmss.zip`
 4. **Restarts the Caché instance** — Automatically brings the database back online
 
 This ensures you have a complete, point-in-time backup of your NBSS data and database state.
@@ -155,7 +155,7 @@ Example output:
 [14:30:45] Added: NBSS\Attachments
 [14:30:50] Added: Cache\mgr\CACHE.DAT (2500.5 MB)
 [14:31:00] Added: Cache\mgr\BACKUP_CACHE.DAT (1200.3 MB)
-[14:31:05] Backup complete: C:\path\to\NBSS_Backup_20260707_1430.zip (3700.80 MB)
+[14:31:05] Backup complete: C:\path\to\NBSS_Backup_20260707_143015.zip (3700.80 MB)
 [14:31:10] Restarting Cache...
 [14:31:15] Cache restarted successfully.
 ```

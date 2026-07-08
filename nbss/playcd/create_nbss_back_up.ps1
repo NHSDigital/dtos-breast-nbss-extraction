@@ -12,7 +12,7 @@
             - All CACHE.DAT database files found under InterSystems\Cache
             - InterSystems\Cache\mgr\BACKUP_CACHE.DAT (latest backup only)
       3. Saves the zip to the same folder the script is run from, named:
-            NBSS_Backup_YYYYMMDD_HHmm.zip
+            NBSS_Backup_YYYYMMDD_HHmmss.zip
       4. Restarts the Caché instance once the zip is complete.
 
     Use the -NbssRoot and -CacheRoot parameters if NBSS or InterSystems
@@ -59,7 +59,7 @@ $backupDat = Join-Path $CacheRoot "Cache\mgr\BACKUP_CACHE.DAT"
 if (-not (Test-Path $ccontrol)) { throw "ccontrol.exe not found at '$ccontrol'. Verify -CacheRoot." }
 if (-not (Test-Path $cacheDat)) { throw "Cache folder not found at '$cacheDat'. Verify -CacheRoot." }
 
-$timestamp = Get-Date -Format "yyyyMMdd_HHmm"
+$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $zipPath   = Join-Path $PSScriptRoot "NBSS_Backup_$timestamp.zip"
 
 function Write-Log { param([string]$m) Write-Host "[$(Get-Date -Format 'HH:mm:ss')] $m" }
