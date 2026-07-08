@@ -170,4 +170,4 @@ Example output:
 - Caché will be unavailable during the backup process (typically a few minutes depending on database size)
 - The backup process is automatic — Caché is restarted once the zip is created
 - Ensure sufficient disk space for the backup file (typically 2-3x the CACHE.DAT size)
-- Backups are timestamped, so you can safely run this multiple times without overwriting previous backups
+- Backups are timestamped (to the second), so you can safely run this multiple times without overwriting previous backups (unless started within the same second)
