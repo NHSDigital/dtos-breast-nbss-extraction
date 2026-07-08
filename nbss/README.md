@@ -119,6 +119,8 @@ The `.bat` wrapper file (`create_nbss_back_up.bat`) **bypasses this restriction*
 
 #### Simple Usage (Recommended)
 
+From `nbss/playcd`:
+
 ```PowerShell
 .\create_nbss_back_up.bat
 ```
