@@ -58,7 +58,7 @@ cd nbss
 Remove-Item -Recurse -Force .venv # if there is already .venv created
 cd playcd/data_and_code_export
 uv run export_app_tables.py
-````
+```
 
 This will save the tables as .csv into the folder `\cache_data_export`
 
