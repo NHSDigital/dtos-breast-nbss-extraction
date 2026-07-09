@@ -37,3 +37,4 @@ nbss/playcd/.env
 
 # data files
 *.csv
+*.zip
