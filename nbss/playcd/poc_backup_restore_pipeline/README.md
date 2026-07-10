@@ -120,7 +120,7 @@ The `.bat` wrapper file (`create_nbss_back_up.bat`) **bypasses this restriction*
 - **Administrator privileges** — The script must run as Administrator to stop/start the Caché service
 - **InterSystems Caché** — Must be installed at the specified CacheRoot path
 - **NBSS installation** — Must exist at the specified NbssRoot path
-- **Backup Process** — A manual backup must have been recently run via the [NBSS Backup](#nbss-backup) steps before proceeding
+- **Backup Process** — A manual backup must have been recently run via the [NBSS Backup](#1-manual-nbss-backup) steps before proceeding
 
 #### Parameters
 
