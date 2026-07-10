@@ -1,10 +1,12 @@
-# NBSS Backup-Restore process - Proof of Concept:
+# NBSS Backup-Restore process - Proof of Concept
 
-This documentation and code details the steps required to backup and restore an NBSS instance. The steps should be followed sequentially as follows:
+This documentation and code details the steps required to backup and restore an NBSS instance. The steps should be followed sequentially as follows
 
-1. Backup NBSS manually (optional: only if scheduled overnight backup not available)
-2. Create zip file containing the required backup files
-3. Transfer the zip file to storage account, and it's hash to key vault
+## Table of contents
+
+1. [Backup NBSS manually](#1-manual-nbss-backup) (optional: only if scheduled overnight backup not available)
+2. [Create zip file containing the required backup files](#2-zip-the-required-backup-files)
+3. Transfer the zip file to storage account, and its hash to key vault
 4. Retrieve the file from storage
 5. Set up a clean Caché DB
 6. Restore the backup using InterSystems restore process
@@ -14,7 +16,7 @@ Details of each of the steps are set out below:
 
 ## 1. Manual NBSS backup
 
-This section describes how to manually trigger a backup via the Caché Terminal. This should be run if the overnight backup has not completed before taking the [NBSS Zip Back Up](#nbss-zip-back-up-file-script).
+This section describes how to manually trigger a backup via the Caché Terminal. This should be run if the overnight backup has not completed before taking the [NBSS Zip Back Up](#2-zip-the-required-backup-files).
 
 Open the Caché Terminal and run:
 
