@@ -4,13 +4,14 @@ Connects to InterSystems Cache via ODBC (DSN=NBSS_64), fetches the first 5 table
 loads each into a pandas DataFrame and exports to CSV.
 Note: retrieved empty tables, in addition to the tables with data to the structure
 """
+
 import csv
 import pyodbc
 from dotenv import load_dotenv
 import os
 import sys
 import unittest
-import test_export
+import test_export_app_tables
 
 # variables
 load_dotenv()
@@ -24,11 +25,14 @@ PWD = os.getenv("PWD")
 OUTPUT_DIR = "cache_data_export"
 CHUNK_SIZE = 10000
 
+
 def main():
 
     # connection
     try:
-        conn = pyodbc.connect(f"DRIVER={{{DRIVER}}};SERVER={SERVER};PORT={PORT};DATABASE={DATABASE};UID={UID};PWD={PWD}")
+        conn = pyodbc.connect(
+            f"DRIVER={{{DRIVER}}};SERVER={SERVER};PORT={PORT};DATABASE={DATABASE};UID={UID};PWD={PWD}"
+        )
         # out-of-range cannot parse.
         to_str = lambda v: v.decode("utf-8") if v is not None else None
         conn.add_output_converter(pyodbc.SQL_TYPE_DATE, to_str)
@@ -59,7 +63,7 @@ def main():
             cursor.execute(f"SELECT * FROM {full_table_name}")
             columns = [col[0] for col in cursor.description]
 
-            schema_dir  = f"{OUTPUT_DIR}/{schema}"
+            schema_dir = f"{OUTPUT_DIR}/{schema}"
             os.makedirs(schema_dir, exist_ok=True)
             output_path = os.path.join(schema_dir, f"{table}.csv")
 
@@ -71,7 +75,9 @@ def main():
                     writer.writerows(rows)
                     row_count += len(rows)
 
-            print(f"{full_table_name:<10} - {row_count:>6,} rows x {len(columns)} cols → {table}.csv")
+            print(
+                f"{full_table_name:<10} - {row_count:>6,} rows x {len(columns)} cols → {table}.csv"
+            )
 
         except Exception as e:
             print(f"{schema}.{table} failed: {e}")
@@ -82,10 +88,11 @@ def main():
 
     print(f"\nAll CSVs saved to: {os.path.abspath(OUTPUT_DIR)}")
 
+
 if __name__ == "__main__":
     main()
 
-    suite = unittest.TestLoader().loadTestsFromModule(test_export)
+    suite = unittest.TestLoader().loadTestsFromModule(test_export_app_tables)
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
     sys.exit(0 if result.wasSuccessful() else 1)
