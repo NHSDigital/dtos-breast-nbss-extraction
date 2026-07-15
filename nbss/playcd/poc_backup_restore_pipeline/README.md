@@ -8,7 +8,7 @@ This documentation and code details the steps required to backup and restore an 
 2. [Create zip file containing the required backup files](#2-zip-the-required-backup-files)
 3. Transfer the zip file to storage account, and its hash to key vault
 4. Retrieve the file from storage
-5. Set up a clean Caché DB
+5. [Set up a clean Caché DB](#5-set-up-a-clean-caché-db)
 6. Restore the backup using InterSystems restore process
 7. Scrape the tables from Caché to csv
 
@@ -195,3 +195,80 @@ Example output:
 - The backup process is automatic — Caché is restarted once the zip is created
 - Ensure sufficient disk space for the backup file (typically 2-3x the CACHE.DAT size)
 - Backups are timestamped (to the second), so you can safely run this multiple times without overwriting previous backups (unless started within the same second)
+
+## 5. Set up a clean Caché DB
+
+### Manual Approach
+
+Using the PlayCD, follow these steps to set up a clean Caché install:
+
+- Open PlayCD zip and open the `Cache` folder
+- Run installer (cache-2018.1.4.505.1-win_x64.exe)
+- Select 'Install New Instance'
+- Name = CACHERESTORE (this can be whatever you want as long as it doesn't match the name of any existing Caché install)
+- Install Folder = C:\InterSystems\CacheRestore\
+- Click through remaining windows using the default options
+- Once installed Cache services are available here: C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Caché\CACHERESTORE
+
+Note: Cache allows multiple installs on the same machine (and same drive). Once the service is running, the preferred Cache instance can be selected from the system tray (cube icon) in Windows.
+
+### Using a Script
+
+A PowerShell script is provided to automate the Caché installation silently — no manual clicking through the installer UI.
+
+#### Step 1 — Extract the Caché installer
+
+The installer `.exe` must be extracted from the PlayCD zip before it can be run:
+
+```powershell
+Expand-Archive "<path-to-zip-file>" -DestinationPath "C:\Temp\CacheInstaller"
+```
+
+The installer will be at `C:\Temp\CacheInstaller\Setup\cache setup\cache-2018.1.4.505.1-win_x64.exe`.
+
+#### Step 2 — Run the silent install script
+
+From `nbss/playcd/poc_backup_restore_pipeline`:
+
+```batch
+.\install_cache_silent.bat -InstallerPath "C:\Temp\CacheInstaller\Setup\cache setup\cache-2018.1.4.505.1-win_x64.exe"
+```
+
+Or to install and restore a backup in one step:
+
+```batch
+.\install_cache_silent.bat `
+    -InstallerPath "C:\Temp\CacheInstaller\Setup\cache setup\cache-2018.1.4.505.1-win_x64.exe" `
+    -BackupFile "<path-to-backup-file>"
+```
+
+- The installer also starts the Caché instance.
+- Once installed Cache services are available here: C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Caché\CACHERESTORE
+
+#### Parameters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `-InstallerPath` | *(required)* | Path to the extracted `cache-2018.1.4.505.1-win_x64.exe` |
+| `-InstallDir` | `C:\InterSystems\CacheRestore` | Target installation directory |
+| `-InstanceName` | `CACHERESTORE` | Name for the new Caché instance |
+| `-SuperServerPort` | `1973` | TCP port for Caché SuperServer |
+| `-WebServerPort` | `57773` | TCP port for Caché private web server |
+| `-DefaultPassword` | `SYS` | Initial password for the `_SYSTEM` user |
+| `-BackupFile` | *(none)* | Optional path to a `BACKUP_CACHE.DAT` to restore after install |
+| `-SkipRestore` | `false` | If set, skips restore even when `-BackupFile` is provided |
+
+#### Port conflicts
+
+The script checks that the SuperServer and Web Server ports are free before installing. If your existing NBSS instance is already using a port, the script will fail with an error message telling you which process holds the port and suggesting an alternative:
+
+```batch
+.\install_cache_silent.bat -InstallerPath "..." -SuperServerPort 1974 -WebServerPort 57774
+```
+
+The default NBSS instance typically uses ports 1972/57772, so the defaults (1973/57773) should not conflict even with an existing NBSS/Caché install.
+
+#### Files
+
+- `install_cache_silent.ps1` — The main PowerShell script (handles install, port checks, and optional restore)
+- `install_cache_silent.bat` — Wrapper batch file (enables running without execution policy issues)
