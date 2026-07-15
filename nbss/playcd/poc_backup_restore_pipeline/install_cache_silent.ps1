@@ -6,7 +6,7 @@
     This script performs a fully unattended Caché installation:
       1. Checks for port conflicts with existing Caché instances.
       2. Runs the Caché installer in silent mode using /instance and /qn flags.
-      3. Waits for the instance to become available.
+      3. Starts the instance and provides connection information.
       4. Optionally restores an NBSS backup into the new instance.
 
     Designed to run alongside an existing NBSS/Caché installation without interference.
@@ -15,7 +15,7 @@
     Path to the Caché setup executable (setup_cache.exe or similar).
 
 .PARAMETER InstallDir
-    Target installation directory. Defaults to D:\InterSystems\CacheRestore.
+    Target installation directory. Defaults to C:\InterSystems\CacheRestore.
 
 .PARAMETER InstanceName
     Name for the new Caché instance. Defaults to CACHERESTORE.
@@ -27,9 +27,6 @@
 .PARAMETER WebServerPort
     TCP port for the Caché private web server. Defaults to 57773.
     The script will verify this port is not already in use.
-
-.PARAMETER DefaultPassword
-    Initial password for the _SYSTEM user. Defaults to SYS.
 
 .PARAMETER BackupFile
     Optional path to a BACKUP_CACHE.DAT file to restore after installation.
@@ -69,7 +66,6 @@ param (
     [string]$InstanceName     = "CACHERESTORE",
     [int]$SuperServerPort     = 1973,
     [int]$WebServerPort       = 57773,
-    [string]$DefaultPassword  = "SYS",
     [string]$BackupFile       = "",
     [switch]$SkipRestore
 )
@@ -156,7 +152,7 @@ Write-Log "  Ports    : SuperServer=$SuperServerPort, Web=$WebServerPort"
 $installerArgs = @(
     "/instance", $InstanceName
     "/qn"
-    "INSTALLDIR=$InstallDir"
+    "INSTALLDIR=`"$InstallDir`""
     "SUPERSERVERPORT=$SuperServerPort"
     "WEBSERVERPORT=$WebServerPort"
     "INITIALSECURITY=None"
@@ -198,8 +194,8 @@ Write-Log "  Terminal: csession $InstanceName"
 if ($BackupFile -and -not $SkipRestore) {
     Write-Log "Restoring backup from: $BackupFile"
 
-    # The restore script feeds commands into csession interactively.
-    # We use ^BACKUP option 2 (Restore ALL) with the backup file path.
+    # The restore feeds commands into csession interactively via ^DBREST.
+    # ^DBREST prompts: Device (backup file path), Is this a clustered restore? (No), Restore all? (Yes)
     $restoreScript = @"
 ZN "%SYS"
 DO ^DBREST
@@ -209,8 +205,6 @@ $($BackupFile)
 No
 Yes
 "@
-    # Note: ^DBREST is the non-interactive restore utility.
-    # Prompts: Device (backup file path), Is this a clustered restore? (No), Restore all? (Yes)
 
     Write-Log 'Running restore via csession (this may take several minutes)...'
     $restoreScript | & $csessionNew $InstanceName -U "%SYS"

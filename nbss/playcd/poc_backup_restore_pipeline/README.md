@@ -230,13 +230,13 @@ The installer will be at `C:\Temp\CacheInstaller\Setup\cache setup\cache-2018.1.
 
 From `nbss/playcd/poc_backup_restore_pipeline`:
 
-```batch
+```powershell
 .\install_cache_silent.bat -InstallerPath "C:\Temp\CacheInstaller\Setup\cache setup\cache-2018.1.4.505.1-win_x64.exe"
 ```
 
 Or to install and restore a backup in one step:
 
-```batch
+```powershell
 .\install_cache_silent.bat `
     -InstallerPath "C:\Temp\CacheInstaller\Setup\cache setup\cache-2018.1.4.505.1-win_x64.exe" `
     -BackupFile "<path-to-backup-file>"
@@ -254,7 +254,6 @@ Or to install and restore a backup in one step:
 | `-InstanceName` | `CACHERESTORE` | Name for the new Caché instance |
 | `-SuperServerPort` | `1973` | TCP port for Caché SuperServer |
 | `-WebServerPort` | `57773` | TCP port for Caché private web server |
-| `-DefaultPassword` | `SYS` | Initial password for the `_SYSTEM` user |
 | `-BackupFile` | *(none)* | Optional path to a `BACKUP_CACHE.DAT` to restore after install |
 | `-SkipRestore` | `false` | If set, skips restore even when `-BackupFile` is provided |
 
