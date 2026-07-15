@@ -165,8 +165,8 @@ $installerArgs = @(
 Write-Log "Command: $InstallerPath $($installerArgs -join ' ')"
 
 $process = Start-Process -FilePath $InstallerPath `
-                         -ArgumentList $installerArgs `
-                         -Wait -PassThru
+  -ArgumentList $installerArgs `
+  -Wait -PassThru
 
 if ($process.ExitCode -ne 0) {
     throw "Caché installer exited with code $($process.ExitCode). Check the installer log in $InstallDir\mgr\cconsole.log"
