@@ -26,7 +26,7 @@ bash generate-container-sas-token.sh <storage_account> <container_name>
 
 Once the command is ran if you have the correct permission and the right account/container names the command will return a raw string which is the sas token. Copy this token to use in the az copy operation.
 
-Fill the command with the relvant info and append the sas token to the end.
+Fill the command with the relvant info and append the sas token to the end. Easiest way to upload the file is to run the az copy command from the same directory as the file and just specify the file name in the local path to file section.
 
 ```shell
 azcopy "<local path to file to upload>"https://<storageaccount name>.blob.core.windows.net/<storageconatiner name>?<sas token>"
