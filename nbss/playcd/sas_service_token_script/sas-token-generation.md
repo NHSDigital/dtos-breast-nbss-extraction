@@ -1,4 +1,4 @@
-### Service SAS token generation
+# Service SAS token generation
 
 This read me section describes what the generate-container-sas-token.sh script does and how to run it.
 The main purpose of this script is to generate a [service SAS](https://learn.microsoft.com/en-us/rest/api/storageservices/create-service-sas) with write permissions only.
