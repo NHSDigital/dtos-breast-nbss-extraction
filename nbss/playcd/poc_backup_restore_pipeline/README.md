@@ -1,78 +1,22 @@
-# NBSS Caché Export
+# NBSS Backup-Restore process - Proof of Concept
 
-## 1. Exporting code from Caché
+This documentation and code details the steps required to backup and restore an NBSS instance. The steps should be followed sequentially as follows
 
-In the Caché terminal, switch to the NBSS_DEM namespace:
+## Table of contents
 
-```ObjectScript
-ZN "NBSS_DEM"
-```
+1. [Backup NBSS manually](#1-manual-nbss-backup) (optional: only if scheduled overnight backup not available)
+2. [Create zip file containing the required backup files](#2-zip-the-required-backup-files)
+3. Transfer the zip file to storage account, and its hash to key vault
+4. Retrieve the file from storage
+5. [Set up a clean Caché DB](#5-set-up-a-clean-caché-db)
+6. Restore the backup using InterSystems restore process
+7. Scrape the tables from Caché to csv
 
-Then export all classes, routines, and includes:
+Details of each of the steps are set out below:
 
-```ObjectScript
-Set localFolder = "<INSERT LOCAL FOLDER>"
-Do ##class(%SYSTEM.OBJ).Export("*.cls,*.mac,*.inc,",localFolder_"/all_files_export.xml")
-```
+## 1. Manual NBSS backup
 
-NB: use '/' not '\' in filepaths.
-
-### Unpacking
-
-1. Move the exported XML file to `cache_export`
-2. Run `uv run unpack_scripts.py`
-
-This splits the large export into individual XML files organised by type (`cls/`, `mac/`, `inc/`).
-
-## 2. Exporting data from Caché
-
-Connects to NBSS_DEM via ODBC, fetches all tables and exports to CSV.
-
-### Prerequisites
-
-- Create a `.env` file in `nbss/playcd` and add the following:
-
-```ENVIRONMENT
-DRIVER=InterSystems ODBC
-SERVER=127.0.0.1
-PORT=1972
-DATABASE=NBSS_DEM
-UID=<username for NBSS_DEM data source>
-PWD=<password for NBSS_DEM data source>
-```
-
-- (Optional) Within the local environment where Caché runs, set up the NBSS_DEM ODBC Data Source (Set up Part B - [ODBC Connector](https://nhsd-confluence.digital.nhs.uk/spaces/DTS/pages/1373789640/DSTA-554+Access+data+stored+in+Cache))
-
-### Scraping Tables - Option 1: Windows with Caché running natively
-
-**Problem**: Exporting the data is bit more complex as Caché installed `InterSystems ODBC` within `windows`. The repo is set to run with Linux (due to Make), however running this script via Linux (WSL) is difficult due to `InterSystems ODBC` only accessible via windows.
-
-**_For meantime we will run this script via Powershell_**
-
-Reference [InterSystem ODBC](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GEPYTHON_loadlib)
-
-- Run (via powershell due to ODBC connectors installed via Caché):
-
-```PowerShell
-cd nbss
-Remove-Item -Recurse -Force .venv # if there is already .venv created
-cd playcd
-uv run export_app_tables.py
-````
-
-This will save the tables as .csv into the folder `\cache_data_export`
-
-### Scraping Tables - Option 2: Mac with Caché running in Parallels
-
-- In Parallels, install Python 32-bit: open powershell and run `winget install Python.Python.3.12 --architecture x86`
-- Then run `py -3.12-32 -m pip install pyodbc python-dotenv`
-- Open file explorer (in Windows) and find `dtos-breast-nbss-extraction\nbss\playcd`. Most likely in 'Home on Mac (Z:/)' drive. Copy the path (for example: `Z:\dtos-breast-nbss-extraction\nbss\playcd`).
-- run `cd <path from above>`
-- run `py -3.12-32 export_app_tables.py`
-
-## NBSS Backup
-
-This section describes how to manually trigger a backup via the Caché Terminal. This should be run if the overnight backup has not completed before taking the [NBSS Zip Back Up](#nbss-zip-back-up-file-script).
+This section describes how to manually trigger a backup via the Caché Terminal. This should be run if the overnight backup has not completed before taking the [NBSS Zip Back Up](#2-zip-the-required-backup-files).
 
 Open the Caché Terminal and run:
 
@@ -137,7 +81,7 @@ Start the Backup (y/n)? =>
 
 Select `y` and the backup process will begin.
 
-## NBSS Zip Back Up File Script
+## 2. Zip the required backup files
 
 ### Overview
 
@@ -176,7 +120,7 @@ The `.bat` wrapper file (`create_nbss_back_up.bat`) **bypasses this restriction*
 - **Administrator privileges** — The script must run as Administrator to stop/start the Caché service
 - **InterSystems Caché** — Must be installed at the specified CacheRoot path
 - **NBSS installation** — Must exist at the specified NbssRoot path
-- **Backup Process** — A manual backup must have been recently run via the [NBSS Backup](#nbss-backup) steps before proceeding
+- **Backup Process** — A manual backup must have been recently run via the [NBSS Backup](#1-manual-nbss-backup) steps before proceeding
 
 #### Parameters
 
@@ -188,7 +132,7 @@ The `.bat` wrapper file (`create_nbss_back_up.bat`) **bypasses this restriction*
 
 #### Simple Usage (Recommended)
 
-From `nbss/playcd`:
+From `nbss/playcd/poc_backup_restore_pipeline`:
 
 ```PowerShell
 .\create_nbss_back_up.bat
@@ -251,3 +195,79 @@ Example output:
 - The backup process is automatic — Caché is restarted once the zip is created
 - Ensure sufficient disk space for the backup file (typically 2-3x the CACHE.DAT size)
 - Backups are timestamped (to the second), so you can safely run this multiple times without overwriting previous backups (unless started within the same second)
+
+## 5. Set up a clean Caché DB
+
+### Manual Approach
+
+Using the PlayCD, follow these steps to set up a clean Caché install:
+
+- Open PlayCD zip and open the `Cache` folder
+- Run installer (cache-2018.1.4.505.1-win_x64.exe)
+- Select 'Install New Instance'
+- Name = CACHERESTORE (this can be whatever you want as long as it doesn't match the name of any existing Caché install)
+- Install Folder = C:\InterSystems\CacheRestore\
+- Click through remaining windows using the default options
+- Once installed Cache services are available here: C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Caché\CACHERESTORE
+
+Note: Cache allows multiple installs on the same machine (and same drive). Once the service is running, the preferred Cache instance can be selected from the system tray (cube icon) in Windows.
+
+### Using a Script
+
+A PowerShell script is provided to automate the Caché installation silently — no manual clicking through the installer UI.
+
+#### Step 1 — Extract the Caché installer
+
+The installer `.exe` must be extracted from the PlayCD zip before it can be run:
+
+```powershell
+Expand-Archive "<path-to-zip-file>" -DestinationPath "C:\Temp\CacheInstaller"
+```
+
+The installer will be at `C:\Temp\CacheInstaller\Setup\cache setup\cache-2018.1.4.505.1-win_x64.exe`.
+
+#### Step 2 — Run the silent install script
+
+From `nbss/playcd/poc_backup_restore_pipeline`:
+
+```powershell
+.\install_cache_silent.bat -InstallerPath "C:\Temp\CacheInstaller\Setup\cache setup\cache-2018.1.4.505.1-win_x64.exe"
+```
+
+Or to install and restore a backup in one step:
+
+```powershell
+.\install_cache_silent.bat `
+    -InstallerPath "C:\Temp\CacheInstaller\Setup\cache setup\cache-2018.1.4.505.1-win_x64.exe" `
+    -BackupFile "<path-to-backup-file>"
+```
+
+- The installer also starts the Caché instance.
+- Once installed Cache services are available here: C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Caché\CACHERESTORE
+
+#### Parameters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `-InstallerPath` | *(required)* | Path to the extracted `cache-2018.1.4.505.1-win_x64.exe` |
+| `-InstallDir` | `C:\InterSystems\CacheRestore` | Target installation directory |
+| `-InstanceName` | `CACHERESTORE` | Name for the new Caché instance |
+| `-SuperServerPort` | `1973` | TCP port for Caché SuperServer |
+| `-WebServerPort` | `57773` | TCP port for Caché private web server |
+| `-BackupFile` | *(none)* | Optional path to a `BACKUP_CACHE.DAT` to restore after install |
+| `-SkipRestore` | `false` | If set, skips restore even when `-BackupFile` is provided |
+
+#### Port conflicts
+
+The script checks that the SuperServer and Web Server ports are free before installing. If your existing NBSS instance is already using a port, the script will fail with an error message telling you which process holds the port and suggesting an alternative:
+
+```batch
+.\install_cache_silent.bat -InstallerPath "..." -SuperServerPort 1974 -WebServerPort 57774
+```
+
+The default NBSS instance typically uses ports 1972/57772, so the defaults (1973/57773) should not conflict even with an existing NBSS/Caché install.
+
+#### Files
+
+- `install_cache_silent.ps1` — The main PowerShell script (handles install, port checks, and optional restore)
+- `install_cache_silent.bat` — Wrapper batch file (enables running without execution policy issues)
