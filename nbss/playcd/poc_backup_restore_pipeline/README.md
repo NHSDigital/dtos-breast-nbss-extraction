@@ -8,7 +8,7 @@ This documentation and code details the steps required to backup and restore an 
 2. [Create zip file containing the required backup files](#2-zip-the-required-backup-files)
 3. [Transfer the zip file to storage account, and its hash to key vault](#3-hash-zip-and-store-in-azure-key-vault)
 4. Retrieve the file from storage
-5. Set up a clean Caché DB
+5. [Set up a clean Caché DB](#5-set-up-a-clean-caché-db)
 6. Restore the backup using InterSystems restore process
 7. Scrape the tables from Caché to csv
 
@@ -196,78 +196,78 @@ Example output:
 - Ensure sufficient disk space for the backup file (typically 2-3x the CACHE.DAT size)
 - Backups are timestamped (to the second), so you can safely run this multiple times without overwriting previous backups (unless started within the same second)
 
-## 3. Hash zip and store in Azure Key Vault
+## 5. Set up a clean Caché DB
 
-### Overview
+### Manual Approach
 
-The `transfer_hash_zip.ps1` PowerShell script computes a SHA-256 hash of the backup zip file and stores it as a secret in Azure Key Vault. This allows the integrity of the backup to be verified at any point — if the hash stored in Key Vault matches the hash of the file you download, the file has not been tampered with or corrupted (Part 2 - Relates to azCopy, will be linked to markdown file once finished).
+Using the PlayCD, follow these steps to set up a clean Caché install:
 
-1. **Resolves the zip file** — Uses the path supplied via `-ZipPath`, or auto-selects the most recently modified `*.zip` in the script directory
-2. **Computes a SHA-256 hash** — Produces a unique fingerprint of the file contents
-3. **Checks Azure CLI login** — Automatically launches `az login` if not already authenticated
-4. **Stores the hash in Key Vault** — Creates a secret named `{YYYYMMDD}-{BsoCode}-hash` e.g. `20260715-A0001344-hash`
+- Open PlayCD zip and open the `Cache` folder
+- Run installer (cache-2018.1.4.505.1-win_x64.exe)
+- Select 'Install New Instance'
+- Name = CACHERESTORE (this can be whatever you want as long as it doesn't match the name of any existing Caché install)
+- Install Folder = C:\InterSystems\CacheRestore\
+- Click through remaining windows using the default options
+- Once installed Cache services are available here: C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Caché\CACHERESTORE
 
-Each zip file produces a different hash because the zip embeds the timestamp of when files were compressed, ensuring the value stored in Key Vault always reflects that specific backup.
+Note: Cache allows multiple installs on the same machine (and same drive). Once the service is running, the preferred Cache instance can be selected from the system tray (cube icon) in Windows.
 
-### Why Run Through the .bat File?
+### Using a Script
 
-The `.bat` wrapper (`transfer_hash_zip.bat`) bypasses PowerShell execution policy restrictions — the same reason as `create_nbss_back_up.bat`. See [Why Run Through the .bat File?](#why-run-through-the-bat-file) above.
+A PowerShell script is provided to automate the Caché installation silently — no manual clicking through the installer UI.
 
-### Requirements
+#### Step 1 — Extract the Caché installer
 
-- **Azure CLI** — Install from <https://aka.ms/installazurecliwindows>
-- **Azure Key Vault access** — The authenticated identity must have the **Key Vault Secrets Officer** role on the target vault
-- **A zip file** — Produced by `create_nbss_back_up.bat` in the previous step
+The installer `.exe` must be extracted from the PlayCD zip before it can be run:
 
-### Parameters
+```powershell
+Expand-Archive "<path-to-zip-file>" -DestinationPath "C:\Temp\CacheInstaller"
+```
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `-BsoCode` | *(mandatory)* | BSO code embedded in the secret name e.g. `A0001344` |
-| `-KeyVaultName` | `nbsse-dev-kv` | Name of the Azure Key Vault |
-| `-ZipPath` | *(newest `*.zip` in script folder)* | Full path to the zip file to hash |
+The installer will be at `C:\Temp\CacheInstaller\Setup\cache setup\cache-2018.1.4.505.1-win_x64.exe`.
 
-### Usage
+#### Step 2 — Run the silent install script
 
 From `nbss/playcd/poc_backup_restore_pipeline`:
 
-#### Simple (auto-detects newest zip)
-
-```PowerShell
-.\transfer_hash_zip.bat A0001344
+```powershell
+.\install_cache_silent.bat -InstallerPath "C:\Temp\CacheInstaller\Setup\cache setup\cache-2018.1.4.505.1-win_x64.exe"
 ```
 
-#### With explicit zip path
+Or to install and restore a backup in one step:
 
-```PowerShell
-.\transfer_hash_zip.bat A0001344 "C:\path\to\NBSS_A0001344_Backup_20260715_143015.zip"
+```powershell
+.\install_cache_silent.bat `
+    -InstallerPath "C:\Temp\CacheInstaller\Setup\cache setup\cache-2018.1.4.505.1-win_x64.exe" `
+    -BackupFile "<path-to-backup-file>"
 ```
 
-#### With a different Key Vault
+- The installer also starts the Caché instance.
+- Once installed Cache services are available here: C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Caché\CACHERESTORE
 
-```PowerShell
-.\transfer_hash_zip.ps1 -BsoCode "A0001344" -KeyVaultName "my-other-kv" -ZipPath "C:\path\to\backup.zip"
+#### Parameters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `-InstallerPath` | *(required)* | Path to the extracted `cache-2018.1.4.505.1-win_x64.exe` |
+| `-InstallDir` | `C:\InterSystems\CacheRestore` | Target installation directory |
+| `-InstanceName` | `CACHERESTORE` | Name for the new Caché instance |
+| `-SuperServerPort` | `1973` | TCP port for Caché SuperServer |
+| `-WebServerPort` | `57773` | TCP port for Caché private web server |
+| `-BackupFile` | *(none)* | Optional path to a `BACKUP_CACHE.DAT` to restore after install |
+| `-SkipRestore` | `false` | If set, skips restore even when `-BackupFile` is provided |
+
+#### Port conflicts
+
+The script checks that the SuperServer and Web Server ports are free before installing. If your existing NBSS instance is already using a port, the script will fail with an error message telling you which process holds the port and suggesting an alternative:
+
+```batch
+.\install_cache_silent.bat -InstallerPath "..." -SuperServerPort 1974 -WebServerPort 57774
 ```
 
-### Output
+The default NBSS instance typically uses ports 1972/57772, so the defaults (1973/57773) should not conflict even with an existing NBSS/Caché install.
 
-```output
-Zip file   : C:\...\NBSS_A0001344_Backup_20260715_143015.zip
-SHA-256    : ....
-Secret name: 20260715-A0001344-hash
-Azure CLI  : logged in as user@nhs.net
-Storing secret in Key Vault 'nbsse-dev-kv' ...
-Secret stored successfully.
-Secret ID  : https://nbsse-dev-kv.vault.azure.net/secrets/20260715-A0001344-hash/...
-```
+#### Files
 
-### Files
-
-- `transfer_hash_zip.ps1` — The main PowerShell script (hashing and Key Vault logic)
-- `transfer_hash_zip.bat` — Wrapper batch file (enables running without execution policy issues)
-
-### Notes
-
-- Key Vault secret names only allow **letters, numbers, and hyphens** — underscores are not permitted
-- Running the script on the same day with the same BSO code will **overwrite** the existing secret for that day. Use `-ZipPath` explicitly if running multiple times per day to ensure the correct file is hashed
-- The script will prompt for `az login` automatically if you are not already authenticated
+- `install_cache_silent.ps1` — The main PowerShell script (handles install, port checks, and optional restore)
+- `install_cache_silent.bat` — Wrapper batch file (enables running without execution policy issues)
