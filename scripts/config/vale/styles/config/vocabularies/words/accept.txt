@@ -24,4 +24,5 @@ yml
 uv
 lockfile
 CsessionPath
+az
 azCopy

@@ -200,7 +200,7 @@ Example output:
 
 ### Overview
 
-The `transfer_hash_zip.ps1` PowerShell script computes a SHA-256 hash of the backup zip file and stores it as a secret in Azure Key Vault. This allows the integrity of the backup to be verified at any point — if the hash stored in Key Vault matches the hash of the file you download, the file has not been tampered with or corrupted (Part 2 - Relates to azCopy, will be linked to markdown file once finished).
+The `transfer_hash_zip.ps1` PowerShell script computes a SHA-256 hash of the backup zip file and stores it as a secret in Azure Key Vault. This allows the integrity of the backup to be verified at any point — if the hash stored in Key Vault matches the hash of the file you download, the file has not been tampered with or corrupted. Once complete, please follow the instructions for [SAS token generation](../sas_service_token_script/sas-token-generation.md) regarding the hashed zip file.
 
 1. **Resolves the zip file** — Uses the path supplied via `-ZipPath`, or auto-selects the most recently modified `*.zip` in the script directory
 2. **Computes a SHA-256 hash** — Produces a unique fingerprint of the file contents
