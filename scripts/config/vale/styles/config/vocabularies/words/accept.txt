@@ -25,3 +25,4 @@ uv
 lockfile
 CsessionPath
 az
+[Aa]z[Cc]opy

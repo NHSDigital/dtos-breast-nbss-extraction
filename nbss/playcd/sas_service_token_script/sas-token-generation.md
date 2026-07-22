@@ -1,14 +1,14 @@
 # Service SAS token generation
 
-This read me section describes what the generate-container-sas-token.sh script does and how to run it.
+This README section describes what the generate-container-sas-token.sh script does and how to run it.
 The main purpose of this script is to generate a [service SAS](https://learn.microsoft.com/en-us/rest/api/storageservices/create-service-sas) with write permissions only.
-This can then be used in a [az copy command](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-blobs-upload) to authenticate the user and upload the file to a storage container.
+This can then be used in an [azcopy command](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-blobs-upload) to authenticate the user and upload the file to a storage container.
 
 ## Prerequisites
 
-You need to have azure CLI installed and be logged in on your microsoft Entra account to access the account keys for the storage account.
+You need to have Azure CLI installed and be logged in on your Microsoft Entra account to access the account keys for the storage account.
 
-You will also need to have [azure copy installed](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10) as well.
+You will also need to have [AzCopy installed](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10) as well.
 
 ## Execution
 
@@ -29,7 +29,7 @@ Once the command is ran if you have the correct permission and the right account
 Fill the command with the relevant info and append the sas token to the end. Easiest way to upload the file is to run the az copy command from the same directory as the file and just specify the file name in the local path to file section.
 
 ```shell
-azcopy copy "<local path to file to upload>" https://<storageaccount name>.blob.core.windows.net/<storageconatiner name>?<sas token>"
+azcopy copy "<local path to file to upload>" "https://<storageaccount name>.blob.core.windows.net/<storagecontainer name>?<sas token>"
 ```
 
 Once ran if successful you should see the command return that it has done a write operation to the storage container.
