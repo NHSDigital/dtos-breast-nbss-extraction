@@ -200,7 +200,7 @@ Example output:
 
 ### Overview
 
-The `transfer_hash_zip.ps1` PowerShell script computes a SHA-256 hash of the backup zip file and stores it as a secret in Azure Key Vault. This allows the integrity of the backup to be verified at any point — if the hash stored in Key Vault matches the hash of the file you download, the file has not been tampered with or corrupted. Once complete, please follow the instructions for [SAS token generation](../sas_service_token_script/sas-token-generation.md) regarding the hashed zip file.
+The `transfer_hash_zip.ps1` PowerShell script computes a SHA-256 hash of the backup zip file and stores it as a secret in Azure Key Vault. This allows the integrity of the backup to be verified at any point — if the hash stored in Key Vault matches the hash of the file you download, the file has not been tampered with or corrupted. Once complete, follow the [AzCopy](#step-2---AzCopy-to-storage) steps to copy the hashed zip file to the storage account.
 
 1. **Resolves the zip file** — Uses the path supplied via `-ZipPath`, or auto-selects the most recently modified `*.zip` in the script directory
 2. **Computes a SHA-256 hash** — Produces a unique fingerprint of the file contents
@@ -217,9 +217,14 @@ The `.bat` wrapper (`transfer_hash_zip.bat`) bypasses PowerShell execution polic
 
 - **Azure CLI** — Install from <https://aka.ms/installazurecliwindows>
 - **Azure Key Vault access** — The authenticated identity must have the **Key Vault Secrets Officer** role on the target vault
-- **A zip file** — Produced by `create_nbss_back_up.bat` in the previous step
+- **A zip file** — Produced by `create_nbss_back_up.bat` in the previous step**
+- **AzCopy** - Install from <https://learn.microsoft.com/en-us/azure/storage/common/storage-use-AzCopy-v10>
 
-### Parameters
+### Step 1 - Hash and Store
+
+The script will compute a SHA-256 hash of the zip file and then store the hash value as a secret in Azure Key Vault, allowing the integrity of the backup to be verified later.
+
+#### Parameters
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
@@ -227,29 +232,29 @@ The `.bat` wrapper (`transfer_hash_zip.bat`) bypasses PowerShell execution polic
 | `-KeyVaultName` | `nbsse-dev-kv` | Name of the Azure Key Vault |
 | `-ZipPath` | *(newest `*.zip` in script folder)* | Full path to the zip file to hash |
 
-### Usage
+#### Usage
 
 From `nbss/playcd/poc_backup_restore_pipeline`:
 
-#### Simple (auto-detects newest zip)
+##### Simple (auto-detects newest zip)
 
 ```PowerShell
 .\transfer_hash_zip.bat A0001344
 ```
 
-#### With explicit zip path
+##### With explicit zip path
 
 ```PowerShell
 .\transfer_hash_zip.bat A0001344 "C:\path\to\NBSS_A0001344_Backup_20260715_143015.zip"
 ```
 
-#### With a different Key Vault
+##### With a different Key Vault
 
 ```PowerShell
 .\transfer_hash_zip.ps1 -BsoCode "A0001344" -KeyVaultName "my-other-kv" -ZipPath "C:\path\to\backup.zip"
 ```
 
-### Output
+#### Output
 
 ```output
 Zip file   : C:\...\NBSS_A0001344_Backup_20260715_143015.zip
@@ -261,10 +266,45 @@ Secret stored successfully.
 Secret ID  : https://nbsse-dev-kv.vault.azure.net/secrets/20260715-A0001344-hash/...
 ```
 
-### Files
+#### Files
 
 - `transfer_hash_zip.ps1` — The main PowerShell script (hashing and Key Vault logic)
 - `transfer_hash_zip.bat` — Wrapper batch file (enables running without execution policy issues)
+
+### Step 2 - AzCopy to Storage
+
+Reference: [SAS token generation](../sas_service_token_script/sas-token-generation.md)
+You need to have Azure CLI installed and be logged in on your Microsoft Entra account to access the account keys for the storage account.
+
+#### Execution
+
+Run the shell script interactively to be prompted to input the storage account name and container name.
+
+| Variable | Value | Description |
+|-----------|---------|-------------|
+| `-storage_account` | `bsrtestdatalake` | Storage account to copy the file to |
+| `-container_name` | `bso-001-container` | Name of the container we are copying to |
+| `-local path to file to upload` | *(newest `*.zip` in script folder)* | Full path to the hashed zip file |
+
+```shell
+bash generate-container-sas-token.sh
+```
+
+Run the shell script non-interactively by providing parameters:
+
+```shell
+bash generate-container-sas-token.sh <storage_account> <container_name>
+```
+
+Once the command is run, if you have the correct permissions and the right account/container names, the command will return a raw string which is the SAS token. Copy this token to use in the AzCopy operation.
+
+Fill the command with the relevant info and append the SAS token to the end. The easiest way to upload the file is to run the AzCopy command from the same directory as the file and just specify the file name in the local path to file section.
+
+```shell
+AzCopy copy "<local path to file to upload>" "https://<storageaccount name>.blob.core.windows.net/<storagecontainer name>?<sas token>"
+```
+
+Once run, if successful, you should see the command return that it has done a write operation to the storage container.
 
 ### Notes
 

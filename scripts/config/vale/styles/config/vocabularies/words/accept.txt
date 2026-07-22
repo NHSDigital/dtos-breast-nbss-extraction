@@ -25,4 +25,4 @@ uv
 lockfile
 CsessionPath
 az
-azCopy
+[Aa]z[Cc]opy
