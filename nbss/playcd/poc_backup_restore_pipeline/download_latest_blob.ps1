@@ -1,10 +1,9 @@
 <#
 .SYNOPSIS
-    Downloads the latest blob from an Azure Storage Account container.
+    Downloads the latest blob from an Azure Storage Account container and verifies its SHA-256 hash against Azure Key Vault.
 
 .DESCRIPTION
-    Lists all blobs in the specified container, identifies the most recently
-    modified blob, and downloads it to a local destination.
+    Lists all blobs in the specified container, identifies the most recently modified blob, downloads it locally, computes its SHA-256 hash, and compares it against the value stored in Azure Key Vault.
 
 .PARAMETER ContainerName
     Name of the Azure Storage container.
