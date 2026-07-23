@@ -99,8 +99,10 @@ while ($waited -lt $TimeoutSeconds) {
 
     if (Test-Path $integLogFile) {
         $logContent = Get-Content $integLogFile -Raw -ErrorAction SilentlyContinue
-        # Detect completion via multiple possible markers in the integrity report
-        if ($logContent -match "(?i)(globals? with errors found|No Errors were found|Integrity check completed|errors exposed)") {
+
+        # Treat the check as complete only once we have a summary block for each directory
+        $summaryPattern = "(?ms)---Total for directory .+?(?:No Errors were found in this directory\.|errors? (?:found|exposed).*)"
+        if ([regex]::Matches($logContent, $summaryPattern).Count -ge 2) {
             break
         }
     }
