@@ -144,6 +144,12 @@ try {
                 if ($entry.FullName.StartsWith($folder, [System.StringComparison]::OrdinalIgnoreCase)) {
                     $relativePath = $entry.FullName.Replace("/", "\")
                     $targetPath = Join-Path $NbssRoot $relativePath
+
+                    $resolvedRoot = [System.IO.Path]::GetFullPath(($NbssRoot.TrimEnd("\") + "\"))
+                    $resolvedTarget = [System.IO.Path]::GetFullPath($targetPath)
+                    if (-not $resolvedTarget.StartsWith($resolvedRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+                        throw "Zip entry path traversal detected: '$($entry.FullName)'"
+                    }
                     break
                 }
             }
