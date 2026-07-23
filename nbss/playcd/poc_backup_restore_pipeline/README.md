@@ -14,6 +14,20 @@ This documentation and code details the steps required to backup and restore an 
 
 Details of each of the steps are set out below:
 
+## Naming convention
+
+A consistent naming pattern is used across all steps to ensure the hash stored in Key Vault can be matched to the correct blob in storage. The pattern is:
+
+| Artifact | Format | Example |
+|----------|--------|---------|
+| Zip filename (uploaded to storage) | `{YYYYMMDD}-{BsoCode}.zip` | `20260715-A0001344.zip` |
+| Key Vault secret name | `{YYYYMMDD}-{BsoCode}-hash` | `20260715-A0001344-hash` |
+| Blob name in storage container | `{YYYYMMDD}-{BsoCode}.zip` | `20260715-A0001344.zip` |
+
+The download script (step 4) derives the secret name by stripping the `.zip` extension from the blob name and appending `-hash`. For this to work, the blob uploaded in step 3 **must** be renamed to `{YYYYMMDD}-{BsoCode}.zip` before uploading via AzCopy.
+
+> **Important:** The zip file created in step 2 uses the format `NBSS_<BsoCode>_Backup_YYYYMMDD_HHmmss.zip`. You must rename it to `{YYYYMMDD}-{BsoCode}.zip` before uploading to storage so the naming is consistent with the Key Vault secret.
+
 ## 1. Manual NBSS backup
 
 This section describes how to manually trigger a backup via the Caché Terminal. This should be run if the overnight backup has not completed before taking the [NBSS Zip Back Up](#2-zip-the-required-backup-files).
@@ -311,6 +325,78 @@ Once run, if successful, you should see the command return that it has done a wr
 - Key Vault secret names only allow **letters, numbers, and hyphens** — underscores are not permitted
 - Running the script on the same day with the same BSO code will **overwrite** the existing secret for that day. Use `-ZipPath` explicitly if running multiple times per day to ensure the correct file is hashed
 - The script will prompt for `az login` automatically if you are not already authenticated
+
+## 4. Retrieve the file from storage and verify integrity
+
+### Overview
+
+The `download_latest_blob.ps1` PowerShell script downloads the most recently modified blob from an Azure Storage Account container, computes its SHA-256 hash, and compares it against the hash stored in Azure Key Vault to verify the file has not been tampered with or corrupted during transfer.
+
+1. **Downloads the latest blob** — Lists all blobs in the specified container, identifies the most recently modified, and downloads it to the script directory
+2. **Computes a SHA-256 hash** — Produces a fingerprint of the downloaded file
+3. **Retrieves the stored hash from Key Vault** — Uses the zip filename (without extension) + `-hash` as the secret name
+4. **Compares the hashes** — If they match, the file integrity is confirmed; if not, the script exits with an error
+
+### Requirements
+
+- **Azure CLI** — Install from <https://aka.ms/installazurecliwindows>
+- **Azure login** — Run `az login` before executing the script
+- **Storage Account access** — The authenticated identity must have read access to the storage container
+- **Key Vault access** — The authenticated identity must have the **Key Vault Secrets User** role on the target vault
+
+### Parameters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `-ContainerName` | *(mandatory)* | Name of the Azure Storage container |
+| `-StorageAccountName` | *(mandatory)* | Name of the Azure Storage Account |
+| `-KeyVaultName` | `nbsse-dev-kv` | Name of the Azure Key Vault to retrieve the stored hash from |
+
+### Usage
+
+From `nbss/playcd/poc_backup_restore_pipeline`:
+
+#### Simple (default Key Vault)
+
+```PowerShell
+.\download_latest_blob.ps1 -ContainerName "bso-001-container" -StorageAccountName "bsrtestdatalake"
+```
+
+#### With a different Key Vault
+
+```PowerShell
+.\download_latest_blob.ps1 -ContainerName "bso-001-container" -StorageAccountName "bsrtestdatalake" -KeyVaultName "my-other-kv"
+```
+
+### Output
+
+```output
+Latest blob: 20260715-A0001344.zip
+Download complete: C:\...\poc_backup_restore_pipeline\20260715-A0001344.zip
+SHA-256    : E6129C1AA9F62945DC64E3E920A028FC545427E2CCB999606D58FA32E4E70F1A
+Secret name: 20260715-A0001344-hash
+Stored hash: E6129C1AA9F62945DC64E3E920A028FC545427E2CCB999606D58FA32E4E70F1A
+MATCH: Downloaded file hash matches the stored hash.
+```
+
+If the hashes do not match:
+
+```output
+WARNING: MISMATCH: Downloaded file hash does NOT match the stored hash.
+  Local : ABC123...
+  Stored: DEF456...
+```
+
+### Files
+
+- `download_latest_blob.ps1` — The main PowerShell script (download, hash, and verify logic)
+
+### Notes
+
+- The file is downloaded to the same directory as the script
+- The secret name is derived from the blob filename: `{filename-without-extension}-hash` e.g. blob `20260715-A0001344.zip` → secret `20260715-A0001344-hash`
+- If the container has multiple blobs, the most recently modified one is selected
+- A hash mismatch indicates the file may have been corrupted or tampered with — do not proceed with the restore
 
 ## 5. Set up a clean Caché DB
 
