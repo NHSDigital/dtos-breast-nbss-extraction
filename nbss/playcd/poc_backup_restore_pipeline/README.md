@@ -7,7 +7,7 @@ This documentation and code details the steps required to backup and restore an 
 1. [Backup NBSS manually](#1-manual-nbss-backup) (optional: only if scheduled overnight backup not available)
 2. [Create zip file containing the required backup files](#2-zip-the-required-backup-files)
 3. [Transfer the zip file to storage account, and its hash to key vault](#3-hash-zip-and-store-in-azure-key-vault)
-4. Retrieve the file from storage
+4. [Retrieve the file from storage](#4-retrieve-the-file-from-storage-and-verify-integrity)
 5. [Set up a clean Caché DB](#5-set-up-a-clean-caché-db)
 6. Restore the backup using InterSystems restore process
 7. Scrape the tables from Caché to csv
