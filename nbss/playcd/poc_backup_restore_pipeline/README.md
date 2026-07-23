@@ -6,11 +6,13 @@ This documentation and code details the steps required to backup and restore an 
 
 1. [Backup NBSS manually](#1-manual-nbss-backup) (optional: only if scheduled overnight backup not available)
 2. [Create zip file containing the required backup files](#2-zip-the-required-backup-files)
-3. [Transfer the zip file to storage account, and its hash to key vault](#3-hash-zip-and-store-in-azure-key-vault)
-4. Retrieve the file from storage
-5. [Set up a clean Caché DB](#5-set-up-a-clean-caché-db)
-6. Restore the backup using InterSystems restore process
-7. Scrape the tables from Caché to csv
+3. [Hash the zip and store the hash in Azure Key Vault](#3-hash-the-zip-and-store-the-hash-in-azure-key-vault)
+4. [Transfer the zip file to Azure Storage](#4-transfer-the-zip-file-to-azure-storage)
+5. Retrieve the file from storage
+6. [Set up a clean Caché DB](#6-set-up-a-clean-caché-db)
+7. [Restore the backup onto a clean Caché installation](#7-restore-the-backup-onto-a-clean-caché-installation)
+8. [Verify database integrity](#8-verify-database-integrity)
+9. Scrape the tables from Caché to csv
 
 Details of each of the steps are set out below:
 
@@ -196,11 +198,11 @@ Example output:
 - Ensure sufficient disk space for the backup file (typically 2-3x the CACHE.DAT size)
 - Backups are timestamped (to the second), so you can safely run this multiple times without overwriting previous backups (unless started within the same second)
 
-## 3. Hash zip and store in Azure Key Vault
+## 3. Hash the zip and store the hash in Azure Key Vault
 
 ### Overview
 
-The `transfer_hash_zip.ps1` PowerShell script computes a SHA-256 hash of the backup zip file and stores it as a secret in Azure Key Vault. This allows the integrity of the backup to be verified at any point — if the hash stored in Key Vault matches the hash of the file you download, the file has not been tampered with or corrupted. Once complete, follow the [AzCopy](#step-2---azcopy-to-storage) steps to copy the hashed zip file to the storage account.
+The `transfer_hash_zip.ps1` PowerShell script computes a SHA-256 hash of the backup zip file and stores it as a secret in Azure Key Vault. This allows the integrity of the backup to be verified at any point — if the hash stored in Key Vault matches the hash of the file you download, the file has not been tampered with or corrupted.
 
 1. **Resolves the zip file** — Uses the path supplied via `-ZipPath`, or auto-selects the most recently modified `*.zip` in the script directory
 2. **Computes a SHA-256 hash** — Produces a unique fingerprint of the file contents
@@ -217,14 +219,9 @@ The `.bat` wrapper (`transfer_hash_zip.bat`) bypasses PowerShell execution polic
 
 - **Azure CLI** — Install from <https://aka.ms/installazurecliwindows>
 - **Azure Key Vault access** — The authenticated identity must have the **Key Vault Secrets Officer** role on the target vault
-- **A zip file** — Produced by `create_nbss_back_up.bat` in the previous step**
-- **AzCopy** - Install from <https://learn.microsoft.com/en-us/azure/storage/common/storage-use-AzCopy-v10>
+- **A zip file** — Produced by `create_nbss_back_up.bat` in the previous step
 
-### Step 1 - Hash and Store
-
-The script will compute a SHA-256 hash of the zip file and then store the hash value as a secret in Azure Key Vault, allowing the integrity of the backup to be verified later.
-
-#### Parameters
+### Parameters
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
@@ -232,29 +229,29 @@ The script will compute a SHA-256 hash of the zip file and then store the hash v
 | `-KeyVaultName` | `nbsse-dev-kv` | Name of the Azure Key Vault |
 | `-ZipPath` | *(newest `*.zip` in script folder)* | Full path to the zip file to hash |
 
-#### Usage
+### Usage
 
 From `nbss/playcd/poc_backup_restore_pipeline`:
 
-##### Simple (auto-detects newest zip)
+#### Simple (auto-detects newest zip)
 
 ```PowerShell
 .\transfer_hash_zip.bat A0001344
 ```
 
-##### With explicit zip path
+#### With explicit zip path
 
 ```PowerShell
 .\transfer_hash_zip.bat A0001344 "C:\path\to\NBSS_A0001344_Backup_20260715_143015.zip"
 ```
 
-##### With a different Key Vault
+#### With a different Key Vault
 
 ```PowerShell
 .\transfer_hash_zip.ps1 -BsoCode "A0001344" -KeyVaultName "my-other-kv" -ZipPath "C:\path\to\backup.zip"
 ```
 
-#### Output
+### Output
 
 ```output
 Zip file   : C:\...\NBSS_A0001344_Backup_20260715_143015.zip
@@ -266,17 +263,28 @@ Secret stored successfully.
 Secret ID  : https://nbsse-dev-kv.vault.azure.net/secrets/20260715-A0001344-hash/...
 ```
 
-#### Files
+### Files
 
 - `transfer_hash_zip.ps1` — The main PowerShell script (hashing and Key Vault logic)
 - `transfer_hash_zip.bat` — Wrapper batch file (enables running without execution policy issues)
 
-### Step 2 - AzCopy to Storage
+### Notes
+
+- Key Vault secret names only allow **letters, numbers, and hyphens** — underscores are not permitted
+- Running the script on the same day with the same BSO code will **overwrite** the existing secret for that day. Use `-ZipPath` explicitly if running multiple times per day to ensure the correct file is hashed
+- The script will prompt for `az login` automatically if you are not already authenticated
+
+## 4. Transfer the zip file to Azure Storage
 
 Reference: [SAS token generation](../sas_service_token_script/sas-token-generation.md)
 You need to have Azure CLI installed and be logged in on your Microsoft Entra account to access the account keys for the storage account.
 
-#### Execution
+### Requirements
+
+- **AzCopy** — Install from <https://learn.microsoft.com/en-us/azure/storage/common/storage-use-AzCopy-v10>
+- **Azure CLI** — Install from <https://aka.ms/installazurecliwindows>
+
+### Usage
 
 Run the shell script interactively to be prompted to input the storage account name and container name.
 
@@ -306,13 +314,7 @@ AzCopy copy "<local path to file to upload>" "https://<storageaccount name>.blob
 
 Once run, if successful, you should see the command return that it has done a write operation to the storage container.
 
-### Notes
-
-- Key Vault secret names only allow **letters, numbers, and hyphens** — underscores are not permitted
-- Running the script on the same day with the same BSO code will **overwrite** the existing secret for that day. Use `-ZipPath` explicitly if running multiple times per day to ensure the correct file is hashed
-- The script will prompt for `az login` automatically if you are not already authenticated
-
-## 5. Set up a clean Caché DB
+## 6. Set up a clean Caché DB
 
 ### Manual Approach
 
@@ -350,14 +352,6 @@ From `nbss/playcd/poc_backup_restore_pipeline`:
 .\install_cache_silent.bat -InstallerPath "C:\Temp\CacheInstaller\Setup\cache setup\cache-2018.1.4.505.1-win_x64.exe"
 ```
 
-Or to install and restore a backup in one step:
-
-```powershell
-.\install_cache_silent.bat `
-    -InstallerPath "C:\Temp\CacheInstaller\Setup\cache setup\cache-2018.1.4.505.1-win_x64.exe" `
-    -BackupFile "<path-to-backup-file>"
-```
-
 - The installer also starts the Caché instance.
 - Once installed Cache services are available here: C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Caché\CACHERESTORE
 
@@ -370,8 +364,6 @@ Or to install and restore a backup in one step:
 | `-InstanceName` | `CACHERESTORE` | Name for the new Caché instance |
 | `-SuperServerPort` | `1973` | TCP port for Caché SuperServer |
 | `-WebServerPort` | `57773` | TCP port for Caché private web server |
-| `-BackupFile` | *(none)* | Optional path to a `BACKUP_CACHE.DAT` to restore after install |
-| `-SkipRestore` | `false` | If set, skips restore even when `-BackupFile` is provided |
 
 #### Port conflicts
 
@@ -385,5 +377,205 @@ The default NBSS instance typically uses ports 1972/57772, so the defaults (1973
 
 #### Files
 
-- `install_cache_silent.ps1` — The main PowerShell script (handles install, port checks, and optional restore)
+- `install_cache_silent.ps1` — The main PowerShell script (handles install and port checks)
 - `install_cache_silent.bat` — Wrapper batch file (enables running without execution policy issues)
+
+## 7. Restore the backup onto a clean Caché installation
+
+> **IMPORTANT:** This will not work if there is another NBSS installation on this machine. Please uninstall NBSS and delete any `C:\NBSS\` folders before starting. NBSS hard-codes paths (e.g. `C:\NBSS\`, registry keys) which will conflict with the restore target and cause both installations to break.
+
+### Overview
+
+The `restore_nbss_back_up.ps1` PowerShell script restores an NBSS backup zip (created by `create_nbss_back_up.ps1`) onto a clean InterSystems Caché installation.
+
+The NBSS databases (`dem_app`, `dem_dat`) live under `C:\NBSS\Cache\` on the source system — they are **not** among the `CACHE.DAT` cold-backup files in the zip (which are from `C:\InterSystems\Cache\`). The NBSS data is only captured inside `BACKUP_CACHE.DAT` (the Caché online backup output).
+
+The script performs the restore in a mix of automated and interactive steps:
+
+1. **Extracts `BACKUP_CACHE.DAT`** from the backup zip into the Caché `mgr\` directory
+2. **Extracts NBSS application files** (Attachments, Letters, Labels) to `NbssRoot`
+3. **Starts the Caché instance** (leaving the clean install's system databases intact)
+4. **Creates and mounts empty databases** for `dem_app` and `dem_dat` (so `^DBREST` can write to them)
+5. **Opens an interactive `^DBREST` session** — the user follows on-screen prompts to restore the NBSS databases (skipping system databases)
+6. **Creates an `NBSS` namespace** mapped to the restored databases
+
+> **IMPORTANT:** The script does NOT restore system databases (`CACHESYS`, `CACHELIB`, `CACHEAUDIT`, etc.). Restoring these from a different instance causes `cache.cpf` parsing errors and prevents startup. Only the NBSS application databases are restored via `^DBREST`.
+
+### Prerequisites
+
+- A **clean InterSystems Caché installation** must already exist at the specified `CacheRoot` path (e.g. `C:\InterSystems\CacheRestore`)
+- The target Caché instance must use the **same version, character width (8-bit or Unicode), and locale** as the source instance
+- **Administrator privileges** are required to stop/start the Caché service
+- A backup zip file (e.g. `NBSS_Backup_20260708_152359.zip`) must be available locally
+
+### Usage
+
+#### Parameters
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `-BackupZip` | Yes | — | Path to the NBSS backup zip file |
+| `-NbssRoot` | No | `C:\NBSS` | Root folder where NBSS application files should be restored |
+| `-CacheRoot` | No | `C:\InterSystems\CacheRestore` | Path to the Caché instance folder |
+| `-InstanceName` | No | `CACHERESTORE` | Name of the Caché instance |
+| `-NbssDbDir` | No | `C:\NBSS\Cache` | Directory where NBSS databases (dem_app, dem_dat) will be created |
+| `-SkipNbssFiles` | No | — | If specified, skips restoring Attachments/Letters/Labels |
+
+#### Simple Usage (Recommended)
+
+From `nbss/playcd/poc_backup_restore_pipeline`:
+
+```batch
+.\restore_nbss_back_up.bat -BackupZip ".\NBSS_Backup_20260708_152359.zip"
+```
+
+#### With Custom Paths
+
+```batch
+.\restore_nbss_back_up.bat -BackupZip "D:\Backups\NBSS_A0001344_Backup_20260708_152359.zip" -CacheRoot "E:\InterSystems\CacheRestore" -NbssRoot "D:\NBSS"
+```
+
+#### Database Only (Skip NBSS Application Files)
+
+```batch
+.\restore_nbss_back_up.bat -BackupZip ".\NBSS_Backup_20260708_152359.zip" -SkipNbssFiles
+```
+
+### Example Output
+
+```output
+[10:15:00] Backup zip   : C:\path\to\NBSS_Backup_20260708_152359.zip
+[10:15:00] NBSS root    : C:\NBSS
+[10:15:00] Cache root   : C:\InterSystems\CacheRestore
+[10:15:00] Instance     : CACHERESTORE
+[10:15:00] NBSS DB dir  : C:\NBSS\Cache
+[10:15:00] Checking if instance CACHERESTORE is running...
+[10:15:00] Instance CACHERESTORE is not running -- skipping stop.
+[10:15:00] Opening backup zip...
+[10:15:30] Extracted: BACKUP_CACHE.DAT (1066.9 MB) -> C:\InterSystems\CacheRestore\mgr\BACKUP_CACHE.DAT
+[10:15:30] Extraction complete: BACKUP_CACHE.DAT + 23 NBSS file(s)
+[10:15:30] Starting instance CACHERESTORE...
+[10:15:35] Instance CACHERESTORE started successfully.
+[10:15:35] Creating, registering and mounting NBSS databases...
+[10:15:36]   Databases created and mounted successfully.
+[10:15:36]
+[10:15:36] ============================================================
+[10:15:36] INTERACTIVE STEP: ^DBREST
+[10:15:36] ============================================================
+[10:15:36] ...prompts displayed...
+[10:15:36] Launching interactive csession for ^DBREST...
+```
+
+At this point a Caché terminal opens. Follow the prompts below, then the script continues automatically.
+
+### Running ^DBREST (interactive step)
+
+When the Caché terminal opens, type `DO ^DBREST` and respond to each prompt as shown:
+
+| Prompt | Your response |
+|--------|---------------|
+| `1 =>` | `2` |
+| `Do you want to set switch 10...? Yes =>` | press Enter |
+| `Device:` | `C:\InterSystems\CacheRestore\mgr\BACKUP_CACHE.DAT` |
+| `Is this the backup you want to start restoring? Yes =>` | press Enter |
+| `c:\intersystems\cache\mgr\ =>` | `X` |
+| `c:\intersystems\cache\mgr\cacheaudit\ =>` | `X` |
+| `c:\intersystems\cache\mgr\user\ =>` | `X` |
+| `c:\nbss\cache\dem_app\ =>` | `C:\NBSS\Cache\dem_app\` |
+| `c:\nbss\cache\dem_dat\ =>` | `C:\NBSS\Cache\dem_dat\` |
+| `Do you want to change this list of directories? No =>` | press Enter |
+| `Confirm Restore? No =>` | `Yes` |
+| *(restore runs — wait for it to finish)* | |
+| `Device:` (next backup volume) | `STOP` |
+| `Do you have any more backups to restore? Yes =>` | `No` |
+| `Apply: 1 =>` (journal entries) | `4` |
+
+Then type `HALT` to exit the Caché terminal. The script will continue with namespace creation.
+
+### Files
+
+- `restore_nbss_back_up.ps1` — The main PowerShell restore script
+- `restore_nbss_back_up.bat` — Wrapper batch file (enables running without execution policy issues)
+
+### Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| `ccontrol.exe not found` | Verify `-CacheRoot` points to the Caché instance folder (e.g. `C:\InterSystems\CacheRestore`) |
+| `cache.cpf` parsing errors on start | You likely restored `mgr\CACHE.DAT` (CACHESYS) from the source — reinstall the Caché instance and re-run the script |
+| `*ReadOnly` error in ^DBREST | The target databases weren't created/mounted. Check `%TEMP%\setup_db_output.txt` for errors from step 4 |
+| Namespace not found after restore | Check `%TEMP%\cache_config_output.txt` for errors from the namespace creation step |
+| Character/locale mismatch errors | The target Caché instance must match the source's character width and locale setting |
+
+## 8. Verify database integrity
+
+After the restore completes, run `run_integrity_check.ps1` to verify the structural integrity of the restored NBSS databases (`dem_app` and `dem_dat`).
+
+This checks that all database blocks are self-consistent and all globals are traversable — confirming the backup wasn't corrupted during transfer or restoration.
+
+### Usage
+
+From `nbss/playcd/poc_backup_restore_pipeline`:
+
+```batch
+.\run_integrity_check.bat
+```
+
+Or with custom parameters:
+
+```batch
+.\run_integrity_check.bat -CacheRoot "E:\InterSystems\CacheRestore" -TimeoutSeconds 900
+```
+
+### What happens
+
+- The script calls `Do Silent^Integrity(logfile, dirlist)` in the `%SYS` namespace
+- It runs in the background and writes results to `<CacheRoot>\mgr\integ_nbss.txt`
+- The script polls the log file until it completes (default timeout: 10 minutes)
+- A summary is printed showing totals per directory and whether errors were found
+
+### Interpreting results
+
+The output shows a summary per directory:
+
+```
+---Total for directory C:\NBSS\Cache\dem_app\---
+       128 Pointer Level blocks        1024kb (49% full)
+    34,608 Data Level blocks            270MB (73% full)
+     4,538 Big String blocks             35MB (85% full) # = 1,828
+    39,289 Total blocks                 306MB (75% full)
+     1,543 Free blocks                   12MB
+
+Elapsed time = 0.6 seconds 07/22/2026 14:37:17
+
+No Errors were found in this directory.
+```
+
+Exit codes: `0` = passed, `1` = timeout, `2` = errors found.
+
+### Running interactively
+
+If you need a more detailed check:
+
+```Caché Terminal
+ZN "%SYS"
+DO ^Integrity
+```
+
+Follow the prompts to select the NBSS databases.
+
+### Files
+
+- `run_integrity_check.ps1` — The main PowerShell integrity check script
+- `run_integrity_check.bat` — Wrapper batch file (enables running without execution policy issues)
+
+### Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| Integrity check timeout | Check log manually at `<CacheRoot>\mgr\integ_nbss.txt` — large databases may take longer |
+| Integrity errors found | Do NOT use the database. Re-download the backup zip, verify its hash, and re-run the restore |
+
+### Reference
+
+- [InterSystems: Verifying Structural Integrity](https://docs.intersystems.com/latest/csp/docbook/DocBook.UI.Page.cls?KEY=GCDI_integrity#GCDI_integrity_verify)
