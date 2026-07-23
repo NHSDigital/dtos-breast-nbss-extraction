@@ -418,7 +418,7 @@ The script performs the restore in a mix of automated and interactive steps:
 | `-NbssRoot` | No | `C:\NBSS` | Root folder where NBSS application files should be restored |
 | `-CacheRoot` | No | `C:\InterSystems\CacheRestore` | Path to the Caché instance folder |
 | `-InstanceName` | No | `CACHERESTORE` | Name of the Caché instance |
-| `-NbssDbDir` | No | `C:\NBSS\Cache` | Directory where NBSS databases (dem_app, dem_dat) will be created |
+| `-NbssDbDir` | No | `C:\NBSS\Cache` | Directory where NBSS databases (`dem_app`, `dem_dat`) will be created |
 | `-SkipNbssFiles` | No | — | If specified, skips restoring Attachments/Letters/Labels |
 
 #### Simple Usage (Recommended)
@@ -538,7 +538,7 @@ Or with custom parameters:
 
 The output shows a summary per directory:
 
-```
+```output
 ---Total for directory C:\NBSS\Cache\dem_app\---
        128 Pointer Level blocks        1024kb (49% full)
     34,608 Data Level blocks            270MB (73% full)
