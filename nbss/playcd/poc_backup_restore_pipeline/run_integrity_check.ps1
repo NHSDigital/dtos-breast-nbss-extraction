@@ -143,7 +143,13 @@ if ($summaries.Count -gt 0) {
 
 Write-Log ""
 
-if ($logContent -match "(?i)(\d+) errors? exposed" -or ($logContent -match "(\d+) globals? with errors found" -and $Matches[1] -ne "0")) {
+$errorsExposedMatch = [regex]::Match($logContent, "(?i)(\d+)\s+errors?\s+exposed")
+$globalsWithErrorsMatch = [regex]::Match($logContent, "(?i)(\d+)\s+globals?\s+with\s+errors\s+found")
+
+$errorsExposed = if ($errorsExposedMatch.Success) { [int]$errorsExposedMatch.Groups[1].Value } else { 0 }
+$globalsWithErrors = if ($globalsWithErrorsMatch.Success) { [int]$globalsWithErrorsMatch.Groups[1].Value } else { 0 }
+
+if ($errorsExposed -gt 0 -or $globalsWithErrors -gt 0) {
     Write-Log "RESULT: ERRORS DETECTED"
     Write-Warning "Integrity errors found — review $integLogFile before using this database."
     exit 2
