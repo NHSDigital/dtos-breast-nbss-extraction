@@ -9,7 +9,7 @@
       3. Extracts NBSS application files (Attachments, Letters, Labels) to NbssRoot.
       4. Starts the Cache instance.
       5. Runs ^DBREST automatically to restore the NBSS databases (dem_app, dem_dat)
-         from BACKUP_CACHE.DAT, skipping system databases.
+        from BACKUP_CACHE.DAT, skipping system databases.
       6. Registers the restored databases and creates an NBSS namespace.
 
     The backup zip is expected to have been created by create_nbss_back_up.ps1.
