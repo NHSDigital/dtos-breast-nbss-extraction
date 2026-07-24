@@ -352,6 +352,10 @@ The `download_latest_blob.ps1` PowerShell script downloads the most recently mod
 | `-StorageAccountName` | *(mandatory)* | Name of the Azure Storage Account |
 | `-KeyVaultName` | `nbsse-dev-kv` | Name of the Azure Key Vault to retrieve the stored hash from |
 
+### Why Run Through the .bat File?
+
+The `.bat` wrapper (`download_latest_blob.bat`) bypasses PowerShell execution policy restrictions — the same reason as `create_nbss_back_up.bat`. See [Why Run Through the .bat File?](#why-run-through-the-bat-file) above.
+
 ### Usage
 
 From `nbss/playcd/poc_backup_restore_pipeline`:
@@ -359,13 +363,19 @@ From `nbss/playcd/poc_backup_restore_pipeline`:
 #### Simple (default Key Vault)
 
 ```PowerShell
-.\download_latest_blob.ps1 -ContainerName "bso-001-container" -StorageAccountName "bsrtestdatalake"
+.\download_latest_blob.bat bso-001-container bsrtestdatalake
 ```
 
 #### With a different Key Vault
 
 ```PowerShell
-.\download_latest_blob.ps1 -ContainerName "bso-001-container" -StorageAccountName "bsrtestdatalake" -KeyVaultName "my-other-kv"
+.\download_latest_blob.bat bso-001-container bsrtestdatalake my-other-kv
+```
+
+#### Running the PowerShell script directly
+
+```PowerShell
+.\download_latest_blob.ps1 -ContainerName "bso-001-container" -StorageAccountName "bsrtestdatalake"
 ```
 
 ### Output
@@ -373,9 +383,9 @@ From `nbss/playcd/poc_backup_restore_pipeline`:
 ```output
 Latest blob: 20260715-A0001344.zip
 Download complete: C:\...\poc_backup_restore_pipeline\20260715-A0001344.zip
-SHA-256    : E6129C1AA9F62945DC64E3E920A028FC545427E2CCB999606D58FA32E4E70F1A
+SHA-256    : ...
 Secret name: 20260715-A0001344-hash
-Stored hash: E6129C1AA9F62945DC64E3E920A028FC545427E2CCB999606D58FA32E4E70F1A
+Stored hash: ...
 MATCH: Downloaded file hash matches the stored hash.
 ```
 
@@ -390,6 +400,7 @@ WARNING: MISMATCH: Downloaded file hash does NOT match the stored hash.
 ### Files
 
 - `download_latest_blob.ps1` — The main PowerShell script (download, hash, and verify logic)
+- `download_latest_blob.bat` — Wrapper batch file (enables running without execution policy issues)
 
 ### Notes
 
