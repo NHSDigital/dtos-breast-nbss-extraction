@@ -8,16 +8,11 @@ This documentation and code details the steps required to backup and restore an 
 2. [Create zip file containing the required backup files](#2-zip-the-required-backup-files)
 3. [Hash the zip and store the hash in Azure Key Vault](#3-hash-the-zip-and-store-the-hash-in-azure-key-vault)
 4. [Transfer the zip file to Azure Storage](#4-transfer-the-zip-file-to-azure-storage)
-5. Retrieve the file from storage
+5. [Retrieve the file from storage and verify integrity](#5-retrieve-the-file-from-storage-and-verify-integrity)
 6. [Set up a clean Caché DB](#6-set-up-a-clean-caché-db)
 7. [Restore the backup onto a clean Caché installation](#7-restore-the-backup-onto-a-clean-caché-installation)
 8. [Verify database integrity](#8-verify-database-integrity)
 9. Scrape the tables from Caché to csv
-3. [Transfer the zip file to storage account, and its hash to key vault](#3-hash-zip-and-store-in-azure-key-vault)
-4. [Retrieve the file from storage](#4-retrieve-the-file-from-storage-and-verify-integrity)
-5. [Set up a clean Caché DB](#5-set-up-a-clean-caché-db)
-6. Restore the backup using InterSystems restore process
-7. Scrape the tables from Caché to csv
 
 Details of each of the steps are set out below:
 
@@ -333,14 +328,7 @@ AzCopy copy "<local path to file to upload>" "https://<storageaccount name>.blob
 
 Once run, if successful, you should see the command return that it has done a write operation to the storage container.
 
-## 6. Set up a clean Caché DB
-### Notes
-
-- Key Vault secret names only allow **letters, numbers, and hyphens** — underscores are not permitted
-- Running the script on the same day with the same BSO code will **overwrite** the existing secret for that day. Use `-ZipPath` explicitly if running multiple times per day to ensure the correct file is hashed
-- The script will prompt for `az login` automatically if you are not already authenticated
-
-## 4. Retrieve the file from storage and verify integrity
+## 5. Retrieve the file from storage and verify integrity
 
 ### Overview
 
@@ -423,7 +411,7 @@ WARNING: MISMATCH: Downloaded file hash does NOT match the stored hash.
 - If the container has multiple blobs, the most recently modified one is selected
 - A hash mismatch indicates the file may have been corrupted or tampered with — do not proceed with the restore
 
-## 5. Set up a clean Caché DB
+## 6. Set up a clean Caché DB
 
 ### Manual Approach
 
