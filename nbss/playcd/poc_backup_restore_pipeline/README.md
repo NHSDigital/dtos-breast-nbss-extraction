@@ -711,7 +711,7 @@ PWD=<password for the CACHERESTORE instance>
 
 **Problem**: The `InterSystems ODBC` driver is registered within Windows only. The repo is set to run with Linux (due to Make), however running this script via Linux (WSL) is difficult as `InterSystems ODBC` is only accessible from Windows.
 
-**_For this reason we run the script via PowerShell using uv._**
+**For this reason we run the script via PowerShell using uv.**
 
 Reference: [InterSystem ODBC](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GEPYTHON_loadlib)
 
@@ -748,7 +748,7 @@ py -3.12-32 -m unittest test_export_app_tables -v
 
 The script creates a directory structure under `cache_data_export/`:
 
-```
+```text
 cache_data_export/
 ├── APP/
 │   ├── Table1.csv
@@ -836,6 +836,6 @@ When running `test_compare_exports.py`, the APP-schema tables (actual NBSS patie
 
 | Table | Explanation |
 |-------|-------------|
-| `UTIL.TableColumns` | Additional column definitions from objects created during restore (namespace, database config). |
+| `UTIL.TableColumns` | Additional column definitions from objects created during restore (namespace, database configuration). |
 | `UTIL.TableMethod` | Additional method definitions from the same. |
 | `UTIL.TableProperties` | Additional property definitions from the same. |
