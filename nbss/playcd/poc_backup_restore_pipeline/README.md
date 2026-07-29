@@ -479,7 +479,7 @@ The default NBSS instance typically uses ports 1972/57772, so the defaults (1973
 
 ## 7. Restore the backup onto a clean Caché installation
 
-> **IMPORTANT:** This will not work if there is another NBSS installation on this machine. Please uninstall NBSS and delete any `C:\NBSS\` folders before starting. NBSS hard-codes paths (e.g. `C:\NBSS\`, registry keys) which will conflict with the restore target and cause both installations to break.
+> **IMPORTANT:** This will not work if there is another NBSS or Caché installation on this machine. Please uninstall NBSS and Caché delete any `C:\NBSS\` and `C:\InterSystems\` folders before starting. NBSS hard-codes paths (e.g. `C:\NBSS\`, registry keys) which will conflict with the restore target and cause both installations to break.
 
 ### Overview
 
