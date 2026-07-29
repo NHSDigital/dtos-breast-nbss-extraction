@@ -1,13 +1,12 @@
 <#
 .SYNOPSIS
-    Silently installs a clean InterSystems Caché instance and optionally restores an NBSS backup.
+    Silently installs a clean InterSystems Caché instance.
 
 .DESCRIPTION
     This script performs a fully unattended Caché installation:
       1. Checks for port conflicts with existing Caché instances.
       2. Runs the Caché installer in silent mode using /instance and /qn flags.
       3. Starts the instance and provides connection information.
-      4. Optionally restores an NBSS backup into the new instance.
 
     Designed to run alongside an existing NBSS/Caché installation without interference.
 
@@ -28,21 +27,8 @@
     TCP port for the Caché private web server. Defaults to 57773.
     The script will verify this port is not already in use.
 
-.PARAMETER BackupFile
-    Optional path to a BACKUP_CACHE.DAT file to restore after installation.
-
-.PARAMETER SkipRestore
-    If set, skips the restore step even if BackupFile is provided.
-
 .EXAMPLE
-    # Install only (no restore)
     .\install_cache_silent.ps1 -InstallerPath "C:\Temp\cache-2018.1.4.505.1-win_x64.exe"
-
-.EXAMPLE
-    # Install and restore
-    .\install_cache_silent.ps1 `
-        -InstallerPath "C:\Temp\cache-2018.1.4.505.1-win_x64.exe" `
-        -BackupFile "C:\Backups\BACKUP_CACHE.DAT"
 
 .EXAMPLE
     # Custom ports to avoid conflicts
@@ -65,9 +51,7 @@ param (
     [string]$InstallDir       = "C:\InterSystems\CacheRestore",
     [string]$InstanceName     = "CACHERESTORE",
     [int]$SuperServerPort     = 1973,
-    [int]$WebServerPort       = 57773,
-    [string]$BackupFile       = "",
-    [switch]$SkipRestore
+    [int]$WebServerPort       = 57773
 )
 
 $ErrorActionPreference = "Stop"
@@ -80,10 +64,6 @@ function Write-Log { param([string]$m) Write-Host "[$(Get-Date -Format 'HH:mm:ss
 
 if (-not (Test-Path $InstallerPath)) {
     throw "Installer not found at '$InstallerPath'. Provide the path to setup_cache.exe."
-}
-
-if ($BackupFile -and -not (Test-Path $BackupFile)) {
-    throw "Backup file not found at '$BackupFile'."
 }
 
 # ---------------------------------------------------------------------------
@@ -186,39 +166,6 @@ Write-Log "Starting instance $InstanceName..."
 
 Write-Log "  Management Portal: http://localhost:$WebServerPort/csp/sys/UtilHome.csp"
 Write-Log "  Terminal: csession $InstanceName"
-
-# ---------------------------------------------------------------------------
-# Restore backup (optional)
-# ---------------------------------------------------------------------------
-
-if ($BackupFile -and -not $SkipRestore) {
-    Write-Log "Restoring backup from: $BackupFile"
-
-    # The restore feeds commands into csession interactively via ^DBREST.
-    # ^DBREST prompts: Device (backup file path), Is this a clustered restore? (No), Restore all? (Yes)
-    $restoreScript = @"
-ZN "%SYS"
-DO ^DBREST
-
-$($BackupFile)
-
-No
-Yes
-"@
-
-    Write-Log 'Running restore via csession (this may take several minutes)...'
-    $restoreScript | & $csessionNew $InstanceName -U "%SYS"
-
-    if ($LASTEXITCODE -ne 0) {
-        Write-Warning "Restore process returned exit code $LASTEXITCODE. Check the terminal output above."
-    } else {
-        Write-Log "Restore completed successfully."
-    }
-} elseif ($BackupFile -and $SkipRestore) {
-    Write-Log "Backup file provided but -SkipRestore was set. Skipping restore."
-} else {
-    Write-Log "No backup file provided. Instance is ready for manual restore."
-}
 
 # ---------------------------------------------------------------------------
 # Summary
