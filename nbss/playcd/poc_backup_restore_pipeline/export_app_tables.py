@@ -1,8 +1,8 @@
 """
 Description:
-Connects to InterSystems Cache via ODBC (DSN=NBSS_64), fetches the first 5 tables from the APP schema,
-loads each into a pandas DataFrame and exports to CSV.
-Note: retrieved empty tables, in addition to the tables with data to the structure
+Connects to InterSystems Cache via ODBC, fetches all base tables,
+loads each into a CSV export.
+Note: retrieved empty tables, in addition to the tables with data to preserve the structure
 """
 
 import csv
@@ -44,7 +44,7 @@ def main():
     cursor = conn.cursor()
 
     # get all base tables
-    cursor.execute(f"""
+    cursor.execute("""
         SELECT TABLE_SCHEMA, TABLE_NAME
         FROM INFORMATION_SCHEMA.TABLES
         WHERE TABLE_TYPE ='BASE TABLE'
