@@ -20,7 +20,7 @@ DATABASE = os.getenv("DATABASE")
 UID = os.getenv("UID")
 PWD = os.getenv("PWD")
 
-OUTPUT_DIR = "cache_data_export"
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "cache_data_export")
 CHUNK_SIZE = 10000
 
 
@@ -38,7 +38,7 @@ def main():
         conn.add_output_converter(pyodbc.SQL_TYPE_TIMESTAMP, to_str)
         print("Connected!\n")
     except pyodbc.Error as e:
-        print(f"Connection failed: {e.args[1]}")
+        print(f"Connection failed: {e}")
         sys.exit(1)
 
     cursor = conn.cursor()
@@ -57,11 +57,11 @@ def main():
 
     for schema, table in tables:
         try:
-            full_table_name = f"{schema}.{table}"
-            cursor.execute(f"SELECT * FROM {full_table_name}")
+            sql_table_name = f'"{schema}"."{table}"'
+            cursor.execute(f"SELECT * FROM {sql_table_name}")
             columns = [col[0] for col in cursor.description]
 
-            schema_dir = f"{OUTPUT_DIR}/{schema}"
+            schema_dir = os.path.join(OUTPUT_DIR, schema)
             os.makedirs(schema_dir, exist_ok=True)
             output_path = os.path.join(schema_dir, f"{table}.csv")
 
@@ -74,11 +74,11 @@ def main():
                     row_count += len(rows)
 
             print(
-                f"{full_table_name:<10} - {row_count:>6,} rows x {len(columns)} cols → {table}.csv"
+                f"{sql_table_name:<10} - {row_count:>6,} rows x {len(columns)} cols → {table}.csv"
             )
 
         except Exception as e:
-            print(f"{schema}.{table} failed: {e}")
+            raise RuntimeError(f"{schema}.{table} export failed: {e}") from e
 
     # clean up
     cursor.close()

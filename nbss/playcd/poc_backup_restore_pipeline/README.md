@@ -713,7 +713,7 @@ PWD=<password for the CACHERESTORE instance>
 
 **For this reason we run the script via PowerShell using uv.**
 
-Reference: [InterSystem ODBC](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GEPYTHON_loadlib)
+Reference: [InterSystems ODBC](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GEPYTHON_loadlib)
 
 From PowerShell:
 
