@@ -11,8 +11,8 @@
             - NBSS\Labels       (all contents)
             - All CACHE.DAT database files found under InterSystems\Cache
             - InterSystems\Cache\mgr\BACKUP_CACHE.DAT (latest backup only)
-      3. Saves the zip to the same folder the script is run from, named:
-            NBSS_<BsoCode>_Backup_YYYYMMDD_HHmmss.zip
+      3. Saves the zip to poc_backup_restore_pipeline, named:
+            {YYYYMMDD}-{BsoCode}.zip
       4. Restarts the Caché instance once the zip is complete.
 
     Use the -NbssRoot and -CacheRoot parameters if NBSS or InterSystems
@@ -65,8 +65,9 @@ $backupDat = Join-Path $CacheRoot "Cache\mgr\BACKUP_CACHE.DAT"
 if (-not (Test-Path $ccontrol)) { throw "ccontrol.exe not found at '$ccontrol'. Verify -CacheRoot." }
 if (-not (Test-Path $cacheDat)) { throw "Cache folder not found at '$cacheDat'. Verify -CacheRoot." }
 
-$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-$zipPath   = Join-Path $PSScriptRoot "NBSS_${BsoCode}_Backup_$timestamp.zip"
+$timestamp = Get-Date -Format "yyyyMMdd"
+$pipelineRoot = Split-Path $PSScriptRoot -Parent
+$zipPath   = Join-Path $pipelineRoot "${timestamp}-${BsoCode}.zip"
 
 function Write-Log { param([string]$m) Write-Host "[$(Get-Date -Format 'HH:mm:ss')] $m" }
 

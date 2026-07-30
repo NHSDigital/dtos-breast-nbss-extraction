@@ -12,7 +12,7 @@ import os
 import sys
 
 # variables
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 DRIVER = os.getenv("DRIVER")
 SERVER = os.getenv("SERVER")
 PORT = os.getenv("PORT")
@@ -20,7 +20,8 @@ DATABASE = os.getenv("DATABASE")
 UID = os.getenv("UID")
 PWD = os.getenv("PWD")
 
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "cache_data_export")
+PIPELINE_ROOT = os.path.join(os.path.dirname(__file__), "..")
+OUTPUT_DIR = os.path.join(PIPELINE_ROOT, "exported_nbss_data")
 CHUNK_SIZE = 10000
 
 

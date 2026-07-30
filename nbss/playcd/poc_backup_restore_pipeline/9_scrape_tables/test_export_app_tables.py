@@ -6,20 +6,22 @@ every DB table has a corresponding CSV file
 no extra CSV files exist without a matching DB table
 Note: This will be called from export_app_tables.py after it finishes or can be called individually
 """
+
 import os
 import sys
 import unittest
 import pyodbc
 from dotenv import load_dotenv
 
-load_dotenv()
-DRIVER   = os.getenv("DRIVER")
-SERVER   = os.getenv("SERVER")
-PORT     = os.getenv("PORT")
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
+DRIVER = os.getenv("DRIVER")
+SERVER = os.getenv("SERVER")
+PORT = os.getenv("PORT")
 DATABASE = os.getenv("DATABASE")
-UID      = os.getenv("UID")
-PWD      = os.getenv("PWD")
-OUTPUT_DIR = "cache_data_export"
+UID = os.getenv("UID")
+PWD = os.getenv("PWD")
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "exported_nbss_data")
+
 
 def _connect():
     conn = pyodbc.connect(
@@ -32,6 +34,7 @@ def _connect():
     conn.add_output_converter(pyodbc.SQL_TYPE_TIMESTAMP, to_str)
     return conn
 
+
 def _get_db_tables(conn):
     cursor = conn.cursor()
     cursor.execute("""
@@ -42,6 +45,7 @@ def _get_db_tables(conn):
     rows = cursor.fetchall()
     cursor.close()
     return {(schema, table) for schema, table in rows}
+
 
 def _get_csv_files():
     """Walk OUTPUT_DIR and return a set of (schema, table_name) tuples."""
@@ -55,6 +59,7 @@ def _get_csv_files():
                     found.add((entry.name, f.name[:-4]))  # strip .csv
     return found
 
+
 class TestExportAppTables(unittest.TestCase):
 
     @classmethod
@@ -64,8 +69,8 @@ class TestExportAppTables(unittest.TestCase):
         except pyodbc.Error as e:
             raise RuntimeError(f"Could not connect to database: {e}") from e
 
-        cls.db_tables  = _get_db_tables(cls.conn)
-        cls.csv_files  = _get_csv_files()
+        cls.db_tables = _get_db_tables(cls.conn)
+        cls.csv_files = _get_csv_files()
 
         print(f"\nDB tables : {len(cls.db_tables)}")
         print(f"CSV files : {len(cls.csv_files)}")
@@ -97,6 +102,7 @@ class TestExportAppTables(unittest.TestCase):
             f"{len(extra)} CSV file(s) have no matching DB table:\n"
             + "\n".join(f"  {s}.{t}" for s, t in sorted(extra)),
         )
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

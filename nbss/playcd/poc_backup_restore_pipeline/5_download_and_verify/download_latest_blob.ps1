@@ -42,9 +42,10 @@ $latest = (az storage blob list --container-name $ContainerName --account-name $
 
 Write-Host "Latest blob: $latest"
 
-az storage blob download --container-name $ContainerName --account-name $StorageAccountName --name $latest --file (Join-Path $PSScriptRoot $latest)
+$pipelineRoot = Split-Path $PSScriptRoot -Parent
+az storage blob download --container-name $ContainerName --account-name $StorageAccountName --name $latest --file (Join-Path $pipelineRoot $latest)
 
-$localFile = Join-Path $PSScriptRoot $latest
+$localFile = Join-Path $pipelineRoot $latest
 Write-Host "Download complete: $localFile"
 
 # ---------------------------------------------------------------------------
