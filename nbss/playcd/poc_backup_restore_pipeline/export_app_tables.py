@@ -1,8 +1,8 @@
 """
 Description:
-Connects to InterSystems Cache via ODBC (DSN=NBSS_64), fetches the first 5 tables from the APP schema,
-loads each into a pandas DataFrame and exports to CSV.
-Note: retrieved empty tables, in addition to the tables with data to the structure
+Connects to InterSystems Cache via ODBC, fetches all base tables,
+loads each into a CSV export.
+Note: retrieved empty tables, in addition to the tables with data to preserve the structure
 """
 
 import csv
@@ -20,7 +20,7 @@ DATABASE = os.getenv("DATABASE")
 UID = os.getenv("UID")
 PWD = os.getenv("PWD")
 
-OUTPUT_DIR = "cache_data_export"
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "cache_data_export")
 CHUNK_SIZE = 10000
 
 
@@ -38,13 +38,13 @@ def main():
         conn.add_output_converter(pyodbc.SQL_TYPE_TIMESTAMP, to_str)
         print("Connected!\n")
     except pyodbc.Error as e:
-        print(f"Connection failed: {e.args[1]}")
+        print(f"Connection failed: {e}")
         sys.exit(1)
 
     cursor = conn.cursor()
 
     # get all base tables
-    cursor.execute(f"""
+    cursor.execute("""
         SELECT TABLE_SCHEMA, TABLE_NAME
         FROM INFORMATION_SCHEMA.TABLES
         WHERE TABLE_TYPE ='BASE TABLE'
@@ -57,11 +57,11 @@ def main():
 
     for schema, table in tables:
         try:
-            full_table_name = f"{schema}.{table}"
-            cursor.execute(f"SELECT * FROM {full_table_name}")
+            sql_table_name = f'"{schema}"."{table}"'
+            cursor.execute(f"SELECT * FROM {sql_table_name}")
             columns = [col[0] for col in cursor.description]
 
-            schema_dir = f"{OUTPUT_DIR}/{schema}"
+            schema_dir = os.path.join(OUTPUT_DIR, schema)
             os.makedirs(schema_dir, exist_ok=True)
             output_path = os.path.join(schema_dir, f"{table}.csv")
 
@@ -74,11 +74,11 @@ def main():
                     row_count += len(rows)
 
             print(
-                f"{full_table_name:<10} - {row_count:>6,} rows x {len(columns)} cols → {table}.csv"
+                f"{sql_table_name:<10} - {row_count:>6,} rows x {len(columns)} cols → {table}.csv"
             )
 
         except Exception as e:
-            print(f"{schema}.{table} failed: {e}")
+            raise RuntimeError(f"{schema}.{table} export failed: {e}") from e
 
     # clean up
     cursor.close()
