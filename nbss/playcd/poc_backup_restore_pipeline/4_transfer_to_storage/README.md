@@ -1,6 +1,6 @@
 # 4. Transfer the zip file to Azure Storage
 
-Reference: [SAS token generation](../../sas_service_token_script/sas-token-generation.md)
+Reference: [SAS token generation](./generate-container-sas-token.sh)
 You need to have Azure CLI installed and be logged in on your Microsoft Entra account to access the account keys for the storage account.
 
 ## Requirements
