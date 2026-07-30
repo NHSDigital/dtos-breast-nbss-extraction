@@ -1,8 +1,8 @@
-## 7. Restore the backup onto a clean Caché installation
+# 7. Restore the backup onto a clean Caché installation
 
 > **IMPORTANT:** This will not work if there is another NBSS or Caché installation on this machine. Please uninstall NBSS and Caché delete any `C:\NBSS\` and `C:\InterSystems\` folders before starting. NBSS hard-codes paths (e.g. `C:\NBSS\`, registry keys) which will conflict with the restore target and cause both installations to break.
 
-### Overview
+## Overview
 
 The `restore_nbss_back_up.ps1` PowerShell script restores an NBSS backup zip (created by `create_nbss_back_up.ps1`) onto a clean InterSystems Caché installation.
 
@@ -19,16 +19,16 @@ The script performs the restore in a mix of automated and interactive steps:
 
 > **IMPORTANT:** The script does NOT restore system databases (`CACHESYS`, `CACHELIB`, `CACHEAUDIT`, etc.). Restoring these from a different instance causes `cache.cpf` parsing errors and prevents startup. Only the NBSS application databases are restored via `^DBREST`.
 
-### Prerequisites
+## Prerequisites
 
 - A **clean InterSystems Caché installation** must already exist at the specified `CacheRoot` path (e.g. `C:\InterSystems\CacheRestore`)
 - The target Caché instance must use the **same version, character width (8-bit or Unicode), and locale** as the source instance
 - **Administrator privileges** are required to stop/start the Caché service
 - A backup zip file (e.g. `20260708-A0001344.zip`) must be available locally
 
-### Usage
+## Usage
 
-#### Parameters
+### Parameters
 
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
@@ -39,7 +39,7 @@ The script performs the restore in a mix of automated and interactive steps:
 | `-NbssDbDir` | No | `C:\NBSS\Cache` | Directory where NBSS databases (`dem_app`, `dem_dat`) will be created |
 | `-SkipNbssFiles` | No | — | If specified, skips restoring Attachments/Letters/Labels |
 
-#### Simple Usage (Recommended)
+### Simple Usage (Recommended)
 
 From `nbss/playcd/poc_backup_restore_pipeline/7_restore_backup`:
 
@@ -47,19 +47,19 @@ From `nbss/playcd/poc_backup_restore_pipeline/7_restore_backup`:
 .\restore_nbss_back_up.bat -BackupZip "..\20260708-A0001344.zip"
 ```
 
-#### With Custom Paths
+### With Custom Paths
 
 ```batch
 .\restore_nbss_back_up.bat -BackupZip "D:\Backups\20260708-A0001344.zip" -CacheRoot "E:\InterSystems\CacheRestore" -NbssRoot "D:\NBSS"
 ```
 
-#### Database Only (Skip NBSS Application Files)
+### Database Only (Skip NBSS Application Files)
 
 ```batch
 .\restore_nbss_back_up.bat -BackupZip "..\20260708-A0001344.zip" -SkipNbssFiles
 ```
 
-### Example Output
+## Example Output
 
 ```output
 [10:15:00] Backup zip   : C:\path\to\20260708-A0001344.zip
@@ -86,7 +86,7 @@ From `nbss/playcd/poc_backup_restore_pipeline/7_restore_backup`:
 
 At this point a Caché terminal opens. Follow the prompts below, then the script continues automatically.
 
-### Running ^DBREST (interactive step)
+## Running ^DBREST (interactive step)
 
 When the Caché terminal opens, type `DO ^DBREST` and respond to each prompt as shown:
 
@@ -110,12 +110,12 @@ When the Caché terminal opens, type `DO ^DBREST` and respond to each prompt as 
 
 Then type `HALT` to exit the Caché terminal. The script will continue with namespace creation.
 
-### Files
+## Files
 
 - `restore_nbss_back_up.ps1` — The main PowerShell restore script
 - `restore_nbss_back_up.bat` — Wrapper batch file (enables running without execution policy issues)
 
-### Troubleshooting
+## Troubleshooting
 
 | Problem | Solution |
 |---------|----------|

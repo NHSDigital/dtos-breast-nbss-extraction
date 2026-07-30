@@ -60,13 +60,13 @@ Gather these values before starting. They are referenced as `<variable_name>` th
 
 ## Quickstart
 
-Simplest path through the pipeline. All commands run from the relevant step subfolder.
+Simplest path through the pipeline. All commands run from the relevant step sub-folder.
 
 ### 1. Backup NBSS (skip if overnight backup is recent)
 
 In Caché Terminal:
 
-```
+```ObjectScript
 ZN "%SYS"
 DO ^BACKUP
 ```

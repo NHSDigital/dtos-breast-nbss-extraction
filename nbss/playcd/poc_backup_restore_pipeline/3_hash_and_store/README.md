@@ -1,6 +1,6 @@
-## 3. Hash the zip and store the hash in Azure Key Vault
+# 3. Hash the zip and store the hash in Azure Key Vault
 
-### Overview
+## Overview
 
 The `transfer_hash_zip.ps1` PowerShell script computes a SHA-256 hash of the backup zip file and stores it as a secret in Azure Key Vault. This allows the integrity of the backup to be verified at any point — if the hash stored in Key Vault matches the hash of the file you download, the file has not been tampered with or corrupted.
 
@@ -11,17 +11,17 @@ The `transfer_hash_zip.ps1` PowerShell script computes a SHA-256 hash of the bac
 
 Each zip file produces a different hash because the zip embeds the timestamp of when files were compressed, ensuring the value stored in Key Vault always reflects that specific backup.
 
-### Why Run Through the .bat File?
+## Why Run Through the .bat File?
 
 The `.bat` wrapper (`transfer_hash_zip.bat`) bypasses PowerShell execution policy restrictions — the same reason as `create_nbss_back_up.bat`. See [Why Run Through the .bat File?](../2_zip_backup_files/README.md#why-run-through-the-bat-file) in step 2.
 
-### Requirements
+## Requirements
 
 - **Azure CLI** — Install from <https://aka.ms/installazurecliwindows>
 - **Azure Key Vault access** — The authenticated identity must have the **Key Vault Secrets Officer** role on the target vault
 - **A zip file** — Produced by `create_nbss_back_up.bat` in the previous step
 
-### Parameters
+## Parameters
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
@@ -29,29 +29,29 @@ The `.bat` wrapper (`transfer_hash_zip.bat`) bypasses PowerShell execution polic
 | `-KeyVaultName` | `nbsse-dev-kv` | Name of the Azure Key Vault |
 | `-ZipPath` | *(newest `*.zip` in `poc_backup_restore_pipeline`)* | Full path to the zip file to hash |
 
-### Usage
+## Usage
 
 From `nbss/playcd/poc_backup_restore_pipeline/3_hash_and_store`:
 
-#### Simple (auto-detects newest zip)
+### Simple (auto-detects newest zip)
 
 ```PowerShell
 .\transfer_hash_zip.bat A0001344
 ```
 
-#### With explicit zip path
+### With explicit zip path
 
 ```PowerShell
 .\transfer_hash_zip.bat A0001344 "C:\path\to\20260715-A0001344.zip"
 ```
 
-#### With a different Key Vault
+### With a different Key Vault
 
 ```PowerShell
 .\transfer_hash_zip.ps1 -BsoCode "A0001344" -KeyVaultName "my-other-kv" -ZipPath "C:\path\to\backup.zip"
 ```
 
-### Output
+## Output
 
 ```output
 Zip file   : C:\...\20260715-A0001344.zip
@@ -63,12 +63,12 @@ Secret stored successfully.
 Secret ID  : https://nbsse-dev-kv.vault.azure.net/secrets/20260715-A0001344-hash/...
 ```
 
-### Files
+## Files
 
 - `transfer_hash_zip.ps1` — The main PowerShell script (hashing and Key Vault logic)
 - `transfer_hash_zip.bat` — Wrapper batch file (enables running without execution policy issues)
 
-### Notes
+## Notes
 
 - Key Vault secret names only allow **letters, numbers, and hyphens** — underscores are not permitted
 - Running the script on the same day with the same BSO code will **overwrite** the existing secret for that day. Use `-ZipPath` explicitly if running multiple times per day to ensure the correct file is hashed

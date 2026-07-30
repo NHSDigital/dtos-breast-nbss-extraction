@@ -1,6 +1,6 @@
-## 9. Scrape the tables from Caché to CSV
+# 9. Scrape the tables from Caché to CSV
 
-### Overview
+## Overview
 
 The `export_app_tables.py` script connects to the restored CACHERESTORE instance via ODBC, fetches all base tables from all schemas, and exports each table to a CSV file. Empty tables are also exported to preserve the schema structure.
 
@@ -11,7 +11,7 @@ The script:
 3. **Exports each table** in chunks (10,000 rows at a time) to avoid memory issues
 4. **Organises output** into `exported_nbss_data/<schema>/<table>.csv`
 
-### Prerequisites
+## Prerequisites
 
 - The CACHERESTORE instance must be running with the NBSS namespace available (steps 6–8 completed)
 - The InterSystems ODBC driver must be installed (this is included with the Caché installation)
@@ -28,7 +28,7 @@ PWD=<password for the CACHERESTORE instance>
 
 > **Note:** The default `_SYSTEM` password for a fresh Caché install is `SYS`. If you created a custom user via `new_cache_user.ps1`, use those credentials instead.
 
-### Scraping Tables — Option 1: Windows with Caché running natively
+## Scraping Tables — Option 1: Windows with Caché running natively
 
 **Problem**: The `InterSystems ODBC` driver is registered within Windows only. The repo is set to run with Linux (due to Make), however running this script via Linux (WSL) is difficult as `InterSystems ODBC` is only accessible from Windows.
 
@@ -51,7 +51,7 @@ To run the tests:
 uv run -m unittest test_export_app_tables -v
 ```
 
-### Scraping Tables — Option 2: Mac with Caché running in Parallels
+## Scraping Tables — Option 2: Mac with Caché running in Parallels
 
 - In Parallels, install Python 32-bit: open PowerShell and run `winget install Python.Python.3.12 --architecture x86`
 - Then run `py -3.12-32 -m pip install pyodbc python-dotenv`
@@ -65,7 +65,7 @@ To run the tests:
 py -3.12-32 -m unittest test_export_app_tables -v
 ```
 
-### Output
+## Output
 
 The script creates a directory structure under `exported_nbss_data/` in `poc_backup_restore_pipeline`:
 
@@ -95,14 +95,14 @@ APP.Clients    - 56,789 rows x 42 cols → Clients.csv
 All CSVs saved to: C:\...\poc_backup_restore_pipeline\exported_nbss_data
 ```
 
-### Files
+## Files
 
 - `export_app_tables.py` — The main export script (connects via ODBC, exports all tables to CSV)
 - `test_export_app_tables.py` — Verifies that the exported CSVs match the database tables (count, completeness, no extras)
 - `test_compare_exports.py` — Compares the restored export against the original PlayCD export to verify the backup-restore process did not lose data
 - `.env` — Connection credentials (not committed to source control; lives in `poc_backup_restore_pipeline`)
 
-### Comparing with the original PlayCD export
+## Comparing with the original PlayCD export
 
 `test_compare_exports.py` compares the data scraped from the restored NBSS instance (`poc_backup_restore_pipeline/exported_nbss_data/`) with the data scraped from the standard PlayCD installation (`data_and_code_export/cache_data_export/`). This identifies whether the backup-restore process missed any data.
 
@@ -115,7 +115,7 @@ The test checks:
 - Row counts match for each table
 - Column counts match for each table
 
-#### Running the comparison
+### Running the comparison
 
 ```PowerShell
 # Option 1: Windows (uv)
@@ -125,7 +125,7 @@ uv run -m unittest test_compare_exports -v
 py -3.12-32 -m unittest test_compare_exports -v
 ```
 
-### Troubleshooting
+## Troubleshooting
 
 | Problem | Solution |
 |---------|----------|
@@ -134,18 +134,18 @@ py -3.12-32 -m unittest test_compare_exports -v
 | `Connection failed` | Verify the CACHERESTORE instance is running and the `PORT` in `.env` matches (default: `1973`) |
 | No tables exported | Check `DATABASE` in `.env` is set to `NBSS` (the namespace created during restore) |
 
-### Note on expected row count differences
+## Note on expected row count differences
 
 When running `test_compare_exports.py`, the APP-schema tables (actual NBSS patient/screening data) should match exactly. However, some `UTIL` tables will show minor row count differences. These are expected and do not indicate data loss:
 
-#### Transient/runtime data (not preserved across restore)
+### Transient/runtime data (not preserved across restore)
 
 | Table | Explanation |
 |-------|-------------|
 | `UTIL.CurrentJobs` | Tracks active Caché PIDs at time of scrape. The PlayCD had processes running; the restored instance has none because no NBSS application is active. |
 | `UTIL.RemoteAnalysis` | Stored in a global that maps to a system database (e.g. `CACHETEMP` or `mgr\`) which was **not** restored — only `dem_app` and `dem_dat` were. |
 
-#### Data accumulated on the PlayCD *after* the backup was taken
+### Data accumulated on the PlayCD *after* the backup was taken
 
 | Table | Explanation |
 |-------|-------------|
@@ -153,7 +153,7 @@ When running `test_compare_exports.py`, the APP-schema tables (actual NBSS patie
 | `UTIL.SystemStatus` | Same pattern — the original has Cache startup/shutdown events from PlayCD sessions after the backup. The restored ends at the backup point, plus one new entry from the restore itself. |
 | `UTIL.Routine` | Routines compiled on the PlayCD after the backup was taken. |
 
-#### Metadata generated by the restore process itself (slightly more in restored)
+### Metadata generated by the restore process itself (slightly more in restored)
 
 | Table | Explanation |
 |-------|-------------|

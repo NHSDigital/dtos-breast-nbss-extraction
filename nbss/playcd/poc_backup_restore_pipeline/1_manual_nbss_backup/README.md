@@ -1,4 +1,4 @@
-## 1. Manual NBSS backup
+# 1. Manual NBSS backup
 
 This section describes how to manually trigger a backup via the Caché Terminal. This should be run if the overnight backup has not completed before taking the [NBSS Zip Back Up](../2_zip_backup_files/README.md).
 

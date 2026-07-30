@@ -1,6 +1,6 @@
-## 6. Set up a clean Caché DB
+# 6. Set up a clean Caché DB
 
-### Manual Approach
+## Manual Approach
 
 Using the PlayCD, follow these steps to set up a clean Caché install:
 
@@ -14,11 +14,11 @@ Using the PlayCD, follow these steps to set up a clean Caché install:
 
 Note: Cache allows multiple installs on the same machine (and same drive). Once the service is running, the preferred Cache instance can be selected from the system tray (cube icon) in Windows.
 
-### Using a Script
+## Using a Script
 
 A PowerShell script is provided to automate the Caché installation silently — no manual clicking through the installer UI.
 
-#### Step 1 — Extract the Caché installer
+### Step 1 — Extract the Caché installer
 
 The installer `.exe` must be extracted from the PlayCD zip before it can be run:
 
@@ -28,7 +28,7 @@ Expand-Archive "<path-to-zip-file>" -DestinationPath "C:\Temp\CacheInstaller"
 
 The installer will be at `C:\Temp\CacheInstaller\Setup\cache setup\cache-2018.1.4.505.1-win_x64.exe`.
 
-#### Step 2 — Run the silent install script
+### Step 2 — Run the silent install script
 
 From `nbss/playcd/poc_backup_restore_pipeline/6_setup_clean_cache`:
 
@@ -39,7 +39,7 @@ From `nbss/playcd/poc_backup_restore_pipeline/6_setup_clean_cache`:
 - The installer also starts the Caché instance.
 - Once installed Cache services are available here: C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Caché\CACHERESTORE
 
-#### Parameters
+### Parameters
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
@@ -49,7 +49,7 @@ From `nbss/playcd/poc_backup_restore_pipeline/6_setup_clean_cache`:
 | `-SuperServerPort` | `1973` | TCP port for Caché SuperServer |
 | `-WebServerPort` | `57773` | TCP port for Caché private web server |
 
-#### Port conflicts
+### Port conflicts
 
 The script checks that the SuperServer and Web Server ports are free before installing. If your existing NBSS instance is already using a port, the script will fail with an error message telling you which process holds the port and suggesting an alternative:
 
@@ -59,7 +59,7 @@ The script checks that the SuperServer and Web Server ports are free before inst
 
 The default NBSS instance typically uses ports 1972/57772, so the defaults (1973/57773) should not conflict even with an existing NBSS/Caché install.
 
-#### Files
+### Files
 
 - `install_cache_silent.ps1` — The main PowerShell script (handles install and port checks)
 - `install_cache_silent.bat` — Wrapper batch file (enables running without execution policy issues)

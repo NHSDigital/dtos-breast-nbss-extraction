@@ -1,14 +1,14 @@
-## 4. Transfer the zip file to Azure Storage
+# 4. Transfer the zip file to Azure Storage
 
 Reference: [SAS token generation](../../sas_service_token_script/sas-token-generation.md)
 You need to have Azure CLI installed and be logged in on your Microsoft Entra account to access the account keys for the storage account.
 
-### Requirements
+## Requirements
 
 - **AzCopy** — Install from <https://learn.microsoft.com/en-us/azure/storage/common/storage-use-AzCopy-v10>
 - **Azure CLI** — Install from <https://aka.ms/installazurecliwindows>
 
-### Usage
+## Usage
 
 Run the shell script interactively to be prompted to input the storage account name and container name.
 

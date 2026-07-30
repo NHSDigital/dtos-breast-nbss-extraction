@@ -1,6 +1,6 @@
-## 2. Zip the required backup files
+# 2. Zip the required backup files
 
-### Overview
+## Overview
 
 The `create_nbss_back_up.ps1` PowerShell script creates automated, timestamped backups of critical NBSS and InterSystems Caché database files.
 
@@ -16,7 +16,7 @@ The `create_nbss_back_up.ps1` PowerShell script creates automated, timestamped b
 
 This ensures you have a complete, point-in-time backup of your NBSS data and database state.
 
-### Why Run Through the .bat File?
+## Why Run Through the .bat File?
 
 PowerShell has execution policies that prevent unsigned scripts from running by default. Running the script directly gives this error:
 
@@ -30,16 +30,16 @@ The `.bat` wrapper file (`create_nbss_back_up.bat`) **bypasses this restriction*
 - Avoiding the need to alter system-wide security settings
 - Allowing any user to run the backup without administrative PowerShell configuration
 
-### Usage
+## Usage
 
-#### Requirements
+### Requirements
 
 - **Administrator privileges** — The script must run as Administrator to stop/start the Caché service
 - **InterSystems Caché** — Must be installed at the specified CacheRoot path
 - **NBSS installation** — Must exist at the specified NbssRoot path
 - **Backup Process** — A manual backup must have been recently run via the [NBSS Backup](../1_manual_nbss_backup/README.md) steps before proceeding
 
-#### Parameters
+### Parameters
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
@@ -47,7 +47,7 @@ The `.bat` wrapper file (`create_nbss_back_up.bat`) **bypasses this restriction*
 | `-NbssRoot` | `C:\NBSS` | Root folder where NBSS is installed |
 | `-CacheRoot` | `C:\InterSystems` | Root folder where InterSystems Cache is installed |
 
-#### Simple Usage (Recommended)
+### Simple Usage (Recommended)
 
 From `nbss/playcd/poc_backup_restore_pipeline/2_zip_backup_files`:
 
@@ -61,7 +61,7 @@ Runs with default paths and default BSO code (`A000`):
 - InterSystems Cache: `C:\InterSystems`
 - Output filename: `{YYYYMMDD}-A000.zip`
 
-#### With a BSO Code
+### With a BSO Code
 
 ```batch
 .\create_nbss_back_up.bat -BsoCode "A0001344"
@@ -69,19 +69,19 @@ Runs with default paths and default BSO code (`A000`):
 
 Output filename: `{YYYYMMDD}-A0001344.zip`
 
-#### With Custom Paths
+### With Custom Paths
 
 ```batch
 .\create_nbss_back_up.bat -BsoCode "A0001344" -NbssRoot "D:\NBSS" -CacheRoot "E:\InterSystems"
 ```
 
-#### With Only One Custom
+### With Only One Custom
 
 ```batch
 .\create_nbss_back_up.bat -BsoCode "A0001344" -NbssRoot "D:\NBSS"
 ```
 
-### Output
+## Output
 
 The script creates a zip file in `poc_backup_restore_pipeline` with the format `{YYYYMMDD}-A000.zip` (using the default BSO code).
 
@@ -101,12 +101,12 @@ Example output:
 [14:31:15] Cache restarted successfully.
 ```
 
-### Files
+## Files
 
 - `create_nbss_back_up.ps1` — The main PowerShell script (handles all backup logic)
 - `create_nbss_back_up.bat` — Wrapper batch file (enables running without execution policy issues)
 
-### Notes
+## Notes
 
 - Caché will be unavailable during the backup process (typically a few minutes depending on database size)
 - The backup process is automatic — Caché is restarted once the zip is created
