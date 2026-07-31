@@ -32,7 +32,11 @@ CONTAINER_NAME="${2:-}"
     fi
 
 # Expiry time for the SAS token is set to 30 minutes from the current time.
-expiry=$(date -u -d "30 minutes" '+%Y-%m-%dT%H:%MZ')
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    expiry=$(date -u -v+30M '+%Y-%m-%dT%H:%MZ')
+else
+    expiry=$(date -u -d "30 minutes" '+%Y-%m-%dT%H:%MZ')
+fi
 
 # Azure CLI command to retrieve the storage account key with FULL permissions.
 account_key=$(az storage account keys list \

@@ -30,6 +30,8 @@ Details of each of the steps are set out in the linked READMEs.
 - **InterSystems Caché PlayCD installer zip** 2018.1.4.505.1
 - **Python 3.12** with `uv` (Windows) or 32-bit Python (Mac via Parallels)
 
+**Note, once AzCopy is downloaded, extract and add the executable file (`azcopy.exe`) to `poc_backup_restore_pipeline/4_transfer_to_storage`, this is required to run step 4.**
+
 ### Access & permissions
 
 - **Administrator privileges** on the Windows machine (to stop/start Caché services)
@@ -71,7 +73,7 @@ ZN "%SYS"
 DO ^BACKUP
 ```
 
-Select `1` (Backup) → `1` (Full) → type `BACKUP_CACHE.DAT` → `Y` to overwrite → `y` to start.
+Select `1` (Backup) → `1` (Full) → type `BACKUP_CACHE.DAT` → `enter` no description → `y` to start. After backup is complete type `HALT`.
 
 ### 2. Zip the backup files
 
@@ -81,11 +83,23 @@ Select `1` (Backup) → `1` (Full) → type `BACKUP_CACHE.DAT` → `Y` to overwr
 
 ### 3. Hash and store in Key Vault
 
+Login to Azure if you aren't already in this session:
+
+```Powershell
+az login
+```
+
 ```Powershell
 .\transfer_hash_zip.bat <bso_code>
 ```
 
 ### 4. Upload to Azure Storage
+
+Login to Azure if you aren't already in this session:
+
+```Powershell
+az login
+```
 
 ```shell
 bash generate-container-sas-token.sh <storage_account> <container_name>
@@ -93,11 +107,17 @@ bash generate-container-sas-token.sh <storage_account> <container_name>
 
 Copy the returned SAS token and run:
 
-```shell
-AzCopy copy "<YYYYMMDD>-<bso_code>.zip" "https://<storage_account>.blob.core.windows.net/<container_name>?<sas-token>"
+```Powershell
+./azcopy copy "../<YYYYMMDD>-<bso_code>.zip" "https://<storage_account>.blob.core.windows.net/<container_name>?<sas-token>"
 ```
 
 ### 5. Download and verify integrity
+
+Login to Azure if you aren't already in this session:
+
+```Powershell
+az login
+```
 
 ```Powershell
 .\download_latest_blob.bat <container_name> <storage_account>
