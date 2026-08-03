@@ -28,10 +28,12 @@ def _connect():
         f"DRIVER={{{DRIVER}}};SERVER={SERVER};PORT={PORT};"
         f"DATABASE={DATABASE};UID={UID};PWD={PWD}"
     )
-    to_str = lambda v: v.decode("utf-8") if v is not None else None
+    to_str = lambda v: v.decode("utf-8", errors="replace") if v is not None else None
     conn.add_output_converter(pyodbc.SQL_TYPE_DATE, to_str)
     conn.add_output_converter(pyodbc.SQL_TYPE_TIME, to_str)
     conn.add_output_converter(pyodbc.SQL_TYPE_TIMESTAMP, to_str)
+    conn.add_output_converter(pyodbc.SQL_NUMERIC, to_str)
+    conn.add_output_converter(pyodbc.SQL_DECIMAL, to_str)
     return conn
 
 
