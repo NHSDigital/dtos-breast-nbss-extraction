@@ -44,7 +44,7 @@ $ErrorActionPreference = "Stop"
 # 1. Resolve zip file
 # ---------------------------------------------------------------------------
 if ($ZipPath -eq "") {
-    $zipFiles = Get-ChildItem -Path $PSScriptRoot -Filter "*.zip" -File |
+    $zipFiles = Get-ChildItem -Path (Split-Path $PSScriptRoot -Parent) -Filter "*.zip" -File |
                 Sort-Object LastWriteTime -Descending
 
     if ($zipFiles.Count -eq 0) {

@@ -6,13 +6,14 @@ Note: retrieved empty tables, in addition to the tables with data to preserve th
 """
 
 import csv
+import decimal
 import pyodbc
 from dotenv import load_dotenv
 import os
 import sys
 
 # variables
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 DRIVER = os.getenv("DRIVER")
 SERVER = os.getenv("SERVER")
 PORT = os.getenv("PORT")
@@ -20,7 +21,8 @@ DATABASE = os.getenv("DATABASE")
 UID = os.getenv("UID")
 PWD = os.getenv("PWD")
 
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "cache_data_export")
+PIPELINE_ROOT = os.path.join(os.path.dirname(__file__), "..")
+OUTPUT_DIR = os.path.join(PIPELINE_ROOT, "exported_nbss_data")
 CHUNK_SIZE = 10000
 
 
@@ -32,10 +34,12 @@ def main():
             f"DRIVER={{{DRIVER}}};SERVER={SERVER};PORT={PORT};DATABASE={DATABASE};UID={UID};PWD={PWD}"
         )
         # out-of-range cannot parse.
-        to_str = lambda v: v.decode("utf-8") if v is not None else None
+        to_str = lambda v: v.decode("utf-8", errors="replace") if v is not None else None
         conn.add_output_converter(pyodbc.SQL_TYPE_DATE, to_str)
         conn.add_output_converter(pyodbc.SQL_TYPE_TIME, to_str)
         conn.add_output_converter(pyodbc.SQL_TYPE_TIMESTAMP, to_str)
+        conn.add_output_converter(pyodbc.SQL_NUMERIC, to_str)
+        conn.add_output_converter(pyodbc.SQL_DECIMAL, to_str)
         print("Connected!\n")
     except pyodbc.Error as e:
         print(f"Connection failed: {e}")

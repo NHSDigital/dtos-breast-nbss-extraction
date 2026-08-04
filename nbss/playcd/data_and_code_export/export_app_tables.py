@@ -6,6 +6,7 @@ Note: retrieved empty tables, in addition to the tables with data to the structu
 """
 
 import csv
+import decimal
 import pyodbc
 from dotenv import load_dotenv
 import os
@@ -32,10 +33,12 @@ def main():
             f"DRIVER={{{DRIVER}}};SERVER={SERVER};PORT={PORT};DATABASE={DATABASE};UID={UID};PWD={PWD}"
         )
         # out-of-range cannot parse.
-        to_str = lambda v: v.decode("utf-8") if v is not None else None
+        to_str = lambda v: v.decode("utf-8", errors="replace") if v is not None else None
         conn.add_output_converter(pyodbc.SQL_TYPE_DATE, to_str)
         conn.add_output_converter(pyodbc.SQL_TYPE_TIME, to_str)
         conn.add_output_converter(pyodbc.SQL_TYPE_TIMESTAMP, to_str)
+        conn.add_output_converter(pyodbc.SQL_NUMERIC, to_str)
+        conn.add_output_converter(pyodbc.SQL_DECIMAL, to_str)
         print("Connected!\n")
     except pyodbc.Error as e:
         print(f"Connection failed: {e.args[1]}")
