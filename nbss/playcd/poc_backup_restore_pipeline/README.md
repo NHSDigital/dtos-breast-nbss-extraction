@@ -101,8 +101,8 @@ Login to Azure if you aren't already in this session:
 az login
 ```
 
-```shell
-bash generate-container-sas-token.sh <storage_account> <container_name>
+```Powershell
+.\generate-container-sas-token.bat <storage_account> <container_name>
 ```
 
 Copy the returned SAS token and run:
