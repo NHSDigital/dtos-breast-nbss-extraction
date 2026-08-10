@@ -1,9 +1,9 @@
 """
-Verifies that the CSV files produced by export_app_tables.py match the base
-tables returned from the database:
-total CSV count equals total table count
-every DB table has a corresponding CSV file
-no extra CSV files exist without a matching DB table
+Verifies that the tables written to Databricks by export_app_tables.py match
+the base tables returned from the Cache database:
+total Databricks table count equals total Cache table count
+every Cache table has a corresponding Databricks table
+no extra Databricks tables exist without a matching Cache table
 Note: This will be called from export_app_tables.py after it finishes or can be called individually
 """
 
@@ -11,6 +11,8 @@ import os
 import sys
 import unittest
 import pyodbc
+from databricks import sql as databricks_sql
+from databricks.sdk.core import Config
 from dotenv import load_dotenv
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
@@ -20,10 +22,14 @@ PORT = os.getenv("PORT")
 DATABASE = os.getenv("DATABASE")
 UID = os.getenv("UID")
 PWD = os.getenv("PWD")
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "exported_nbss_data")
+
+DATABRICKS_PROFILE = os.getenv("DATABRICKS_PROFILE", "dev")
+DATABRICKS_HTTP_PATH = os.getenv("DATABRICKS_HTTP_PATH")
+CATALOG = os.getenv("CATALOG")
+SCHEMA = os.getenv("SCHEMA")
 
 
-def _connect():
+def _connect_cache():
     conn = pyodbc.connect(
         f"DRIVER={{{DRIVER}}};SERVER={SERVER};PORT={PORT};"
         f"DATABASE={DATABASE};UID={UID};PWD={PWD}"
@@ -35,6 +41,15 @@ def _connect():
     conn.add_output_converter(pyodbc.SQL_NUMERIC, to_str)
     conn.add_output_converter(pyodbc.SQL_DECIMAL, to_str)
     return conn
+
+
+def _connect_databricks():
+    cfg = Config(profile=DATABRICKS_PROFILE)
+    return databricks_sql.connect(
+        server_hostname=cfg.host.replace("https://", ""),
+        http_path=DATABRICKS_HTTP_PATH,
+        credentials_provider=lambda: cfg.authenticate,
+    )
 
 
 def _get_db_tables(conn):
@@ -49,17 +64,13 @@ def _get_db_tables(conn):
     return {(schema, table) for schema, table in rows}
 
 
-def _get_csv_files():
-    """Walk OUTPUT_DIR and return a set of (schema, table_name) tuples."""
-    found = set()
-    if not os.path.isdir(OUTPUT_DIR):
-        return found
-    for entry in os.scandir(OUTPUT_DIR):
-        if entry.is_dir():
-            for f in os.scandir(entry.path):
-                if f.name.endswith(".csv"):
-                    found.add((entry.name, f.name[:-4]))  # strip .csv
-    return found
+def _get_databricks_tables(dbx_conn):
+    """Query Databricks to get all tables in the target schema."""
+    cursor = dbx_conn.cursor()
+    cursor.execute(f"SHOW TABLES IN `{CATALOG}`.`{SCHEMA}`")
+    rows = cursor.fetchall()
+    cursor.close()
+    return {row.tableName for row in rows}
 
 
 class TestExportAppTables(unittest.TestCase):
@@ -67,42 +78,54 @@ class TestExportAppTables(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         try:
-            cls.conn = _connect()
+            cls.cache_conn = _connect_cache()
         except pyodbc.Error as e:
-            raise RuntimeError(f"Could not connect to database: {e}") from e
+            raise RuntimeError(f"Could not connect to Cache: {e}") from e
 
-        cls.db_tables = _get_db_tables(cls.conn)
-        cls.csv_files = _get_csv_files()
+        try:
+            cls.dbx_conn = _connect_databricks()
+        except Exception as e:
+            cls.cache_conn.close()
+            raise RuntimeError(f"Could not connect to Databricks: {e}") from e
 
-        print(f"\nDB tables : {len(cls.db_tables)}")
-        print(f"CSV files : {len(cls.csv_files)}")
+        cls.db_tables = _get_db_tables(cls.cache_conn)
+        cls.dbx_tables = _get_databricks_tables(cls.dbx_conn)
+
+        # Expected Databricks table names: <schema>_<table> in lowercase
+        cls.expected_dbx_tables = {
+            f"{schema}_{table}".lower() for schema, table in cls.db_tables
+        }
+
+        print(f"\nCache tables      : {len(cls.db_tables)}")
+        print(f"Databricks tables : {len(cls.dbx_tables)}")
 
     @classmethod
     def tearDownClass(cls):
-        cls.conn.close()
+        cls.cache_conn.close()
+        cls.dbx_conn.close()
 
-    def test_csv_count_matches_table_count(self):
+    def test_databricks_count_matches_table_count(self):
         self.assertEqual(
-            len(self.csv_files),
-            len(self.db_tables),
-            f"CSV file count ({len(self.csv_files)}) does not match "
-            f"DB table count ({len(self.db_tables)})",
+            len(self.dbx_tables),
+            len(self.expected_dbx_tables),
+            f"Databricks table count ({len(self.dbx_tables)}) does not match "
+            f"Cache table count ({len(self.expected_dbx_tables)})",
         )
 
-    def test_every_table_has_a_csv(self):
-        missing = self.db_tables - self.csv_files
+    def test_every_table_has_a_databricks_table(self):
+        missing = self.expected_dbx_tables - self.dbx_tables
         self.assertFalse(
             missing,
-            f"{len(missing)} table(s) in the DB have no CSV:\n"
-            + "\n".join(f"  {s}.{t}" for s, t in sorted(missing)),
+            f"{len(missing)} table(s) in Cache have no Databricks table:\n"
+            + "\n".join(f"  {t}" for t in sorted(missing)),
         )
 
-    def test_no_extra_csvs(self):
-        extra = self.csv_files - self.db_tables
+    def test_no_extra_databricks_tables(self):
+        extra = self.dbx_tables - self.expected_dbx_tables
         self.assertFalse(
             extra,
-            f"{len(extra)} CSV file(s) have no matching DB table:\n"
-            + "\n".join(f"  {s}.{t}" for s, t in sorted(extra)),
+            f"{len(extra)} Databricks table(s) have no matching Cache table:\n"
+            + "\n".join(f"  {t}" for t in sorted(extra)),
         )
 
 

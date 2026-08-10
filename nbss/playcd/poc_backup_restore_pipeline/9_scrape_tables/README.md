@@ -1,20 +1,24 @@
-# 9. Scrape the tables from Caché to CSV
+# 9. Scrape the tables from Caché to Databricks
 
 ## Overview
 
-The `export_app_tables.py` script connects to the restored CACHERESTORE instance via ODBC, fetches all base tables from all schemas, and exports each table to a CSV file. Empty tables are also exported to preserve the schema structure.
+The `export_app_tables.py` script connects to the restored CACHERESTORE instance via ODBC, fetches all base tables from all schemas, and writes each table directly to a Databricks Unity Catalog as managed Delta tables. Empty tables are also exported to preserve the schema structure.
 
 The script:
 
 1. **Connects** to Caché via ODBC using credentials from a `.env` file
-2. **Queries `INFORMATION_SCHEMA.TABLES`** to discover all base tables
-3. **Exports each table** in chunks (10,000 rows at a time) to avoid memory issues
-4. **Organises output** into `exported_nbss_data/<schema>/<table>.csv`
+2. **Connects** to Databricks via the SQL Connector, authenticated through the Databricks CLI
+3. **Queries `INFORMATION_SCHEMA.TABLES`** to discover all base tables
+4. **Creates tables** in the target schema with column types mapped from the ODBC metadata
+5. **Inserts data** in chunks (10,000 rows at a time) to avoid memory issues
+6. **Names tables** as `<source_schema>_<table>` in lowercase (e.g. `app_clients`, `util_users`)
 
 ## Prerequisites
 
 - The CACHERESTORE instance must be running with the NBSS namespace available (steps 6–8 completed)
 - The InterSystems ODBC driver must be installed (this is included with the Caché installation)
+- The [Databricks CLI](https://docs.databricks.com/en/dev-tools/cli/install.html) must be installed and authenticated (see [DATABRICKS_EXPORT.md](DATABRICKS_EXPORT.md))
+- A running SQL warehouse in the target Databricks workspace
 - Create a `.env` file in `nbss/playcd/poc_backup_restore_pipeline` with the following:
 
 ```ENVIRONMENT
@@ -24,6 +28,8 @@ PORT=1973
 DATABASE=NBSS
 UID=_SYSTEM
 PWD=<password for the CACHERESTORE instance>
+DATABRICKS_PROFILE=dev
+DATABRICKS_HTTP_PATH=/sql/1.0/warehouses/<your-warehouse-id>
 ```
 
 > **Note:** The default `_SYSTEM` password for a fresh Caché install is `SYS`. If you created a custom user via `new_cache_user.ps1`, use those credentials instead.
@@ -43,7 +49,7 @@ cd nbss\playcd\poc_backup_restore_pipeline\9_scrape_tables
 uv run export_app_tables.py
 ```
 
-This will save the tables as `.csv` into the folder `exported_nbss_data/` under `poc_backup_restore_pipeline`.
+This will write the tables directly to the Databricks Unity Catalog.
 
 To run the tests:
 
@@ -67,39 +73,39 @@ py -3.12-32 -m unittest test_export_app_tables -v
 
 ## Output
 
-The script creates a directory structure under `exported_nbss_data/` in `poc_backup_restore_pipeline`:
+Tables are written to the Databricks Unity Catalog under `<catalog>.<schema>`:
 
 ```text
-exported_nbss_data/
-├── APP/
-│   ├── Table1.csv
-│   ├── Table2.csv
-│   └── ...
-├── UTIL/
-│   ├── Users.csv
-│   └── ...
-└── <other schemas>/
+<catalog>.<schema>/
+├── app_cdaccommodation
+├── app_clients
+├── app_bsodetails
+├── util_users
+└── ...
 ```
 
 Example console output:
 
 ```output
-Connected!
+Connected to Cache!
 
-Fetching data from tables
+Connected to Databricks!
 
-APP.BsoDetails -  1,234 rows x 15 cols → BsoDetails.csv
-APP.Clients    - 56,789 rows x 42 cols → Clients.csv
+Writing tables to Databricks
+
+"APP"."BsoDetails" -  1,234 rows x 15 cols → `<catalog>`.`<schema>`.`app_bsodetails`
+"APP"."Clients"    - 56,789 rows x 42 cols → `<catalog>`.`<schema>`.`app_clients`
 ...
 
-All CSVs saved to: C:\...\poc_backup_restore_pipeline\exported_nbss_data
+All tables written to: <catalog>.<schema>
 ```
 
 ## Files
 
-- `export_app_tables.py` — The main export script (connects via ODBC, exports all tables to CSV)
-- `test_export_app_tables.py` — Verifies that the exported CSVs match the database tables (count, completeness, no extras)
+- `export_app_tables.py` — The main export script (connects via ODBC, writes tables to a Databricks Unity Catalog)
+- `test_export_app_tables.py` — Verifies that the exported tables in Databricks match the database tables (count, completeness, no extras)
 - `test_compare_exports.py` — Compares the restored export against the original PlayCD export to verify the backup-restore process did not lose data
+- `DATABRICKS_EXPORT.md` — Detailed guide on Databricks CLI setup, authentication, and configuration
 - `.env` — Connection credentials (not committed to source control; lives in `poc_backup_restore_pipeline`)
 
 ## Comparing with the original PlayCD export
