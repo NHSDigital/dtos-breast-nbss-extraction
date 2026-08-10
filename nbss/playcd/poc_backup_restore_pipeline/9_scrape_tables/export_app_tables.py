@@ -1,7 +1,7 @@
 """
 Description:
 Connects to InterSystems Cache via ODBC, fetches all base tables,
-and writes each table to a Databricks Unity Catalog (devs.bronze).
+and writes each table to a Databricks Unity Catalog (<catalog>.<schema>).
 Note: exports empty tables as well to preserve the structure.
 """
 

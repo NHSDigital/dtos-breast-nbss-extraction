@@ -30,6 +30,8 @@ UID=_SYSTEM
 PWD=<password for the CACHERESTORE instance>
 DATABRICKS_PROFILE=dev
 DATABRICKS_HTTP_PATH=/sql/1.0/warehouses/<your-warehouse-id>
+CATALOG = <catalog>
+SCHEMA = <schema>
 ```
 
 > **Note:** The default `_SYSTEM` password for a fresh Caché install is `SYS`. If you created a custom user via `new_cache_user.ps1`, use those credentials instead.
@@ -50,12 +52,6 @@ uv run export_app_tables.py
 ```
 
 This will write the tables directly to the Databricks Unity Catalog.
-
-To run the tests:
-
-```PowerShell
-uv run -m unittest test_export_app_tables -v
-```
 
 ## Scraping Tables — Option 2: Mac with Caché running in Parallels
 

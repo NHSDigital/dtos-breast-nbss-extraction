@@ -187,6 +187,10 @@ PORT=1973
 DATABASE=NBSS
 UID=_SYSTEM
 PWD=<cache_password>
+DATABRICKS_PROFILE=dev
+DATABRICKS_HTTP_PATH=/sql/1.0/warehouses/<your-warehouse-id>
+CATALOG = <catalog>
+SCHEMA = <schema>
 ```
 
 Then:
@@ -195,7 +199,7 @@ Then:
 uv run export_app_tables.py
 ```
 
-Output lands in `exported_nbss_data/`.
+This will write the tables directly to the Databricks Unity Catalog.
 
 ## A note on naming convention
 
