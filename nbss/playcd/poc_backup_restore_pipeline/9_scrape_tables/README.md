@@ -17,7 +17,7 @@ The script:
 
 - The CACHERESTORE instance must be running with the NBSS namespace available (steps 6–8 completed)
 - The InterSystems ODBC driver must be installed (this is included with the Caché installation)
-- The [Databricks CLI](https://docs.databricks.com/en/dev-tools/cli/install.html) must be installed and authenticated (see [DATABRICKS_EXPORT.md](DATABRICKS_EXPORT.md))
+- The [Databricks CLI](https://docs.databricks.com/en/dev-tools/cli/install.html) must be installed and authenticated
 - A running SQL warehouse in the target Databricks workspace
 - Create a `.env` file in `nbss/playcd/poc_backup_restore_pipeline` with the following:
 
