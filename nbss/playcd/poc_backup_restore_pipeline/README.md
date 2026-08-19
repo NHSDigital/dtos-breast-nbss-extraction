@@ -206,7 +206,7 @@ Then, from `9_scrape_tables`:
 uv run export_app_tables.py
 ```
 
-This connects to Caché via ODBC and writes every base table directly to the Databricks Unity Catalog (`<catalog>.<schema>`) as managed Delta tables, named `<schema>_<table>` in lowercase.
+This connects to Caché via ODBC and writes every base table directly to the Databricks Unity Catalog (`<catalog>.<schema>`) as managed Delta tables, named `<source_schema>_<table>` in lowercase.
 
 To verify the export matches the source tables:
 
