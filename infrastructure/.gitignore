@@ -19,7 +19,7 @@ crash.*.log
 *.tfvars.json
 
 # Environment var files are safe to commit (no secrets, just workspace URLs and resource IDs)
-!**/dev.tfvars
+!**/bsr_env.tfvars
 
 # Ignore override files as they are usually used to override resources locally and so
 # are not checked in
