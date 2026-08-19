@@ -1,16 +1,10 @@
 # ── Workspace ────────────────────────────────────────────────────────────────
+# The Databricks workspace is a serverless-compute-mode workspace, which the
+# azurerm provider cannot manage (no managed resource group to parse). It is
+# managed outside Terraform and referenced here via var.databricks_host.
 
 data "databricks_group" "developers" {
   display_name = "BSR-Digital-Developers"
-  depends_on   = [azurerm_databricks_workspace.main]
-}
-
-resource "azurerm_databricks_workspace" "main" {
-  name                        = "test-databricks-env-2"
-  resource_group_name         = local.resource_group
-  managed_resource_group_name = "databricks-rg-test-databricks-env-2"
-  location                    = data.azurerm_resource_group.main.location
-  sku                         = "premium"
 }
 
 # ── Access Connector ─────────────────────────────────────────────────────────
@@ -41,8 +35,6 @@ resource "databricks_storage_credential" "main" {
   azure_managed_identity {
     access_connector_id = azurerm_databricks_access_connector.main.id
   }
-
-  depends_on = [azurerm_databricks_workspace.main]
 }
 
 # External location — points to the raw ADLS Gen2 container
