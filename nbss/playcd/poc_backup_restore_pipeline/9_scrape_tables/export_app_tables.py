@@ -106,7 +106,9 @@ def main():
         conn = pyodbc.connect(
             f"DRIVER={{{DRIVER}}};SERVER={SERVER};PORT={PORT};DATABASE={DATABASE};UID={UID};PWD={PWD}"
         )
-        to_str = lambda v: v.decode("utf-8", errors="replace") if v is not None else None
+        to_str = lambda v: (
+            v.decode("utf-8", errors="replace") if v is not None else None
+        )
         conn.add_output_converter(pyodbc.SQL_TYPE_DATE, to_str)
         conn.add_output_converter(pyodbc.SQL_TYPE_TIME, to_str)
         conn.add_output_converter(pyodbc.SQL_TYPE_TIMESTAMP, to_str)
@@ -139,7 +141,7 @@ def main():
 
     # Get all base tables from Cache
     cache_cursor.execute("""
-        SELECT TOP 2 TABLE_SCHEMA, TABLE_NAME
+        SELECT TABLE_SCHEMA, TABLE_NAME
         FROM INFORMATION_SCHEMA.TABLES
         WHERE TABLE_TYPE ='BASE TABLE'
     """)
