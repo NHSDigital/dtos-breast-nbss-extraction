@@ -12,7 +12,7 @@ This documentation and code details the steps required to backup and restore an 
 6. [Set up a clean Caché DB](6_setup_clean_cache/README.md)
 7. [Restore the backup onto a clean Caché installation](7_restore_backup/README.md)
 8. [Verify database integrity](8_verify_integrity/README.md)
-9. [Scrape the tables from Caché to CSV](9_scrape_tables/README.md)
+9. [Scrape the tables from Caché to Databricks](9_scrape_tables/README.md)
 
 Details of each of the steps are set out in the linked READMEs.
 
@@ -23,10 +23,16 @@ Details of each of the steps are set out in the linked READMEs.
 - **Azure Storage Account** with a blob container for backup storage
 - **Azure Key Vault** for storing and retrieving backup file hashes
 
+### Databricks resources
+
+- **Databricks workspace** with a Unity Catalog catalog and schema to write the exported tables to (step 9)
+- **A running SQL warehouse** in that workspace (its HTTP path is needed for the `.env` file in step 9)
+
 ### Software
 
 - **Azure CLI** — <https://aka.ms/installazurecliwindows>
 - **AzCopy v10** — <https://learn.microsoft.com/en-us/azure/storage/common/storage-use-AzCopy-v10>
+- **Databricks CLI** — <https://docs.databricks.com/en/dev-tools/cli/install.html> (authenticated, for step 9)
 - **InterSystems Caché PlayCD installer zip** 2018.1.4.505.1
 - **Python 3.12** with `uv` (Windows) or 32-bit Python (Mac via Parallels)
 
@@ -39,6 +45,7 @@ Details of each of the steps are set out in the linked READMEs.
   - **Key Vault Secrets Officer** on the target Key Vault (to store hashes)
   - **Key Vault Secrets User** on the target Key Vault (to retrieve hashes)
   - **Storage Account key access** or **Storage Blob Data Contributor** (for SAS token generation and blob upload/download)
+- **Databricks CLI authentication** with permission to create schemas and tables in the target Unity Catalog catalog and to use the SQL warehouse (for step 9)
 
 ### Other
 
@@ -176,9 +183,9 @@ Type `HALT` to exit. The script continues automatically.
 
 Exit code `0` = passed.
 
-### 9. Export tables to CSV
+### 9. Export tables to Databricks
 
-Create `.env` in this folder `9_scrape_tables`:
+Create `.env` in this folder (`poc_backup_restore_pipeline`):
 
 ```text
 DRIVER=InterSystems ODBC
@@ -193,13 +200,19 @@ CATALOG = <catalog>
 SCHEMA = <schema>
 ```
 
-Then:
+Then, from `9_scrape_tables`:
 
-```Powershell
+```Python
 uv run export_app_tables.py
 ```
 
-This will write the tables directly to the Databricks Unity Catalog.
+This connects to Caché via ODBC and writes every base table directly to the Databricks Unity Catalog (`<catalog>.<schema>`) as managed Delta tables, named `<schema>_<table>` in lowercase.
+
+To verify the export matches the source tables:
+
+```Python
+uv run -m unittest test_export_app_tables -v
+```
 
 ## A note on naming convention
 

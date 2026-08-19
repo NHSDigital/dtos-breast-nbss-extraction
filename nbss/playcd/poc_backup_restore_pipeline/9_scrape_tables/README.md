@@ -61,12 +61,6 @@ This will write the tables directly to the Databricks Unity Catalog.
 - Run `cd <path from above>`
 - Run `py -3.12-32 export_app_tables.py`
 
-To run the tests:
-
-```PowerShell
-py -3.12-32 -m unittest test_export_app_tables -v
-```
-
 ## Output
 
 Tables are written to the Databricks Unity Catalog under `<catalog>.<schema>`:
@@ -96,36 +90,29 @@ Writing tables to Databricks
 All tables written to: <catalog>.<schema>
 ```
 
-## Files
+## Testing
 
-- `export_app_tables.py` — The main export script (connects via ODBC, writes tables to a Databricks Unity Catalog)
-- `test_export_app_tables.py` — Verifies that the exported tables in Databricks match the database tables (count, completeness, no extras)
-- `test_compare_exports.py` — Compares the restored export against the original PlayCD export to verify the backup-restore process did not lose data
-- `DATABRICKS_EXPORT.md` — Detailed guide on Databricks CLI setup, authentication, and configuration
-- `.env` — Connection credentials (not committed to source control; lives in `poc_backup_restore_pipeline`)
+`test_export_app_tables.py` verifies that the tables written to Databricks by the export match the base tables in the restored Caché instance. It connects to both Caché and Databricks, reads the table list from each, and checks:
 
-## Comparing with the original PlayCD export
+- The Databricks table count matches the Caché base-table count
+- Every Caché table has a corresponding Databricks table (nothing missing)
+- No extra Databricks tables exist without a matching Caché table
 
-`test_compare_exports.py` compares the data scraped from the restored NBSS instance (`poc_backup_restore_pipeline/exported_nbss_data/`) with the data scraped from the standard PlayCD installation (`data_and_code_export/cache_data_export/`). This identifies whether the backup-restore process missed any data.
-
-> **Prerequisite:** The scrape process on the standard PlayCD install (`data_and_code_export/export_app_tables.py`) must have been completed first for this comparison to be valid.
-
-The test checks:
-
-- Total number of exported CSV files is the same in both directories
-- Every CSV in the original has a corresponding CSV in the restored export (and vice versa)
-- Row counts match for each table
-- Column counts match for each table
-
-### Running the comparison
+The test verifies presence and naming (`<schema>_<table>` in lowercase), not row-level data content. Run it after `export_app_tables.py` completes:
 
 ```PowerShell
 # Option 1: Windows (uv)
-uv run -m unittest test_compare_exports -v
+uv run -m unittest test_export_app_tables -v
 
 # Option 2: Mac via Parallels (32-bit Python)
-py -3.12-32 -m unittest test_compare_exports -v
+py -3.12-32 -m unittest test_export_app_tables -v
 ```
+
+## Files
+
+- `export_app_tables.py` — The main export script (connects via ODBC, writes tables to a Databricks Unity Catalog)
+- `test_export_app_tables.py` — Verifies that the exported tables in Databricks match the Caché base tables (count, completeness, no extras)
+- `.env` — Connection credentials (not committed to source control; lives in `poc_backup_restore_pipeline`)
 
 ## Troubleshooting
 
@@ -138,7 +125,9 @@ py -3.12-32 -m unittest test_compare_exports -v
 
 ## Note on expected row count differences
 
-When running `test_compare_exports.py`, the APP-schema tables (actual NBSS patient/screening data) should match exactly. However, some `UTIL` tables will show minor row count differences. These are expected and do not indicate data loss:
+> These notes come from a **one-off comparison** we ran between the restored export and the original PlayCD export to confirm the backup-restore process did not lose data. The comparison script is no longer part of this pipeline, but the findings are kept here for reference.
+
+The APP-schema tables (actual NBSS patient/screening data) matched exactly. However, some `UTIL` tables showed minor row count differences. These are expected and do not indicate data loss:
 
 ### Transient/runtime data (not preserved across restore)
 
