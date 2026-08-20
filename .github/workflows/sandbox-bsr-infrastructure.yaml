@@ -1,4 +1,4 @@
-name: "Deploy Dev Infrastructure"
+name: "Deploy Sandbox BSR Infrastructure"
 on:
   push:
     branches:
@@ -23,9 +23,9 @@ jobs:
       - name: install terraform
         uses: hashicorp/setup-terraform@v4
       - name: terraform init
-        run: terraform -chdir=infrastructure/environments/dev init -backend-config=dev.tfbackend
+        run: terraform -chdir=infrastructure/sandbox/bsr_env init -backend-config=bsr_env.tfbackend
       - name: terraform plan
-        run: terraform -chdir=infrastructure/environments/dev plan -var-file=dev.tfvars
+        run: terraform -chdir=infrastructure/sandbox/bsr_env plan -var-file=bsr_env.tfvars
 
   apply:
     name: "Terraform Apply"
@@ -38,7 +38,7 @@ jobs:
       - name: install terraform
         uses: hashicorp/setup-terraform@v4
       - name: terraform init
-        run: terraform -chdir=infrastructure/environments/dev init -backend-config=dev.tfbackend
+        run: terraform -chdir=infrastructure/sandbox/bsr_env init -backend-config=bsr_env.tfbackend
       - name: terraform apply
-        run: terraform -chdir=infrastructure/environments/dev apply -auto-approve -var-file=dev.tfvars
+        run: terraform -chdir=infrastructure/sandbox/bsr_env apply -auto-approve -var-file=bsr_env.tfvars
 
