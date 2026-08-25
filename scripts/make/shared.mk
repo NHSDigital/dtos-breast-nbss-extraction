@@ -29,7 +29,7 @@ _install-uv: # Install uv toolset if not present
 	fi
 
 	uv --version
-	
+
 # This script parses all the make target descriptions and renders the help output.
 HELP_SCRIPT = \
 	\

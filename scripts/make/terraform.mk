@@ -28,7 +28,7 @@ _check-paths:
 terraform-init: _check-paths terraform-fetch-modules set-az-account get-subscription-ids # Initialise Terraform and backend storage - make terraform-init @Terraform
 	$(eval STORAGE_ACCOUNT_NAME=sa${APP_SHORT_NAME}${ENV_CONFIG}tfstate)
 	$(eval export ARM_USE_AZUREAD=true)
-	
+
 	# Don't specify '-upgrade' because plan/apply must honour the lock file. \
 	terraform -chdir="$(TF_DIR)" init \
 		-reconfigure \
@@ -60,3 +60,6 @@ terraform-fetch-modules: # Git clone the DevOps Templates repo if it doesn't exi
 		git -c advice.detachedHead=false clone --depth=1 --single-branch --branch ${TERRAFORM_MODULES_REF} \
 			https://github.com/NHSDigital/dtos-devops-templates.git "$(TF_MODULES_DIR)"; \
 	fi
+
+terraform-fmt: # Format Terraform files - optional: terraform_dir|dir=[path to a directory where the command will be executed, relative to the project's top-level directory, default is one of the module variables or the example directory, if not set], terraform_opts|opts=[options to pass to the Terraform fmt command, default is '-recursive'] @Terraform
+	terraform fmt -recursive -chdir="$(TF_DIR)"
