@@ -1,0 +1,10 @@
+ENV_CONFIG=dev
+ENVIRONMENT=dev
+AZURE_SUBSCRIPTION="Digital Screening DToS - DevOps"
+HUB_SUBSCRIPTION="Digital Screening DToS - DevOps"
+HUB=dev
+TERRAFORM_MODULES_REF=main
+ENABLE_SOFT_DELETE=false
+ADO_MANAGEMENT_POOL=private-pool-dev-uks
+# To reference a tag use full syntax: DEVOPS_TEMPLATES_BRANCH=refs/tags/v0.1
+DEVOPS_TEMPLATES_BRANCH=main

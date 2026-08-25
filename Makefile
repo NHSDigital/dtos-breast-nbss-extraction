@@ -1,36 +1,55 @@
-# This file is for you! Edit it to implement your own hooks (make targets) into
-# the project as automated steps to be executed on locally and in the CD pipeline.
+.DEFAULT_GOAL := help
+.PHONY: help workflow config dependencies githooks-config githooks-run
+.SILENT: help workflow
+.NOTPARALLEL: # this is because make -j could cause race conditions
 
-include scripts/init.mk
+ifeq (,$(filter oneshell,$(.FEATURES)))
+$(error .ONESHELL not supported (GNU Make 3.82+ required, found $(MAKE_VERSION)))
+endif
 
-# ==============================================================================
+include scripts/make/shared.mk
+include scripts/make/environment.mk
+include scripts/make/bootstrap.mk
+include scripts/make/azure.mk
+include scripts/make/terraform.mk
 
-# Example CI/CD targets are: dependencies, build, publish, deploy, clean, etc.
+# ---------------------------------------------------------------------------
+# Help & Meta
+# ---------------------------------------------------------------------------
+help: # Print help @Others
+	printf "\nUsage: \033[3m\033[93m[arg1=val1] [arg2=val2] \033[0m\033[0m\033[32mmake\033[0m\033[34m <command>\033[0m\n\n"
+	perl -e '$(HELP_SCRIPT)' $(MAKEFILE_LIST)
+
+# ---------------------------------------------------------------------------
+# Bootstrap & Environment
+# ---------------------------------------------------------------------------
+# Configure development environment (main) @Configuration
+config: 
+	_install-tools 
+	_install-uv 
+	githooks-config 
+	dependencies 
 
 dependencies: # Install dependencies needed to build and test the project @Pipeline
-	uv sync --directory nbss
+	@if [ -f nbss/pyproject.toml ]; then \
+		uv sync --no-build --directory nbss; \
+	else \
+		echo "Skipping uv sync: nbss/pyproject.toml not found"; \
+	fi
+	@if [ -f package.json ]; then \
+		npm install; \
+	else \
+		echo "Skipping npm install: package.json not found"; \
+	fi
 
-build: # Build the project artefact @Pipeline
-	# TODO: Implement the artefact build step
+githooks-config:
+	if ! command -v pre-commit >/dev/null 2>&1; then \
+		pip install pre-commit; \
+	fi
+	pre-commit install
 
-publish: # Publish the project artefact @Pipeline
-	# TODO: Implement the artefact publishing step
+githooks-run: # Run git hooks configured in this repository @Operations
+	pre-commit run \
+		--config scripts/config/pre-commit.yaml \
+		--all-files
 
-deploy: # Deploy the project artefact to the target environment @Pipeline
-	# TODO: Implement the artefact deployment step
-
-clean:: # Clean-up project resources (main) @Operations
-	# TODO: Implement project resources clean-up step
-
-config:: # Configure development environment (main) @Configuration
-	# TODO: Use only 'make' targets that are specific to this project, e.g. you may not need to install Node.js
-	make _install-dependencies
-
-# ==============================================================================
-
-${VERBOSE}.SILENT: \
-	build \
-	clean \
-	config \
-	dependencies \
-	deploy \
