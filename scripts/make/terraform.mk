@@ -1,5 +1,5 @@
-.PHONY: terraform-init terraform-validate terraform-plan terraform-apply terraform-destroy terraform-fetch-modules _check-paths
-.SILENT: terraform-validate terraform-init terraform-fetch-modules
+.PHONY: terraform-init terraform-validate terraform-plan terraform-apply terraform-destroy terraform-fetch-modules _check-paths terraform-fmt
+.SILENT: terraform-validate terraform-init terraform-fetch-modules terraform-plan terraform-apply terraform-destroy _check-paths terraform-fmt
 
 TF_DIR ?= infrastructure/terraform
 TF_VARS ?= infrastructure/environments/${ENV_CONFIG}/variables.tfvars
@@ -54,6 +54,7 @@ terraform-destroy: terraform-init # Destroy Terraform resources - make terraform
 
 terraform-validate: terraform-init # Validate Terraform changes - make terraform-validate @Terraform
 	terraform -chdir="$(TF_DIR)" validate
+	@echo "✅ Terraform validation successful"
 
 terraform-fetch-modules: # Git clone the DevOps Templates repo if it doesn't exist on disk. @Terraform
 	@if [ ! -d "$(TF_MODULES_DIR)/.git" ]; then \
@@ -62,4 +63,5 @@ terraform-fetch-modules: # Git clone the DevOps Templates repo if it doesn't exi
 	fi
 
 terraform-fmt: # Format Terraform files - optional: terraform_dir|dir=[path to a directory where the command will be executed, relative to the project's top-level directory, default is one of the module variables or the example directory, if not set], terraform_opts|opts=[options to pass to the Terraform fmt command, default is '-recursive'] @Terraform
-	terraform fmt -recursive -chdir="$(TF_DIR)"
+	terraform -chdir="$(TF_DIR)" fmt -recursive
+	@echo "✅ Terraform files formatted successfully"

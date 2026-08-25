@@ -7,6 +7,21 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: "Resolve Terraform version"
+      id: terraform-version
+      shell: bash
+      run: |
+        version=$(awk '/^terraform[[:space:]]+/ { print $2; exit }' .tool-versions)
+        if [ -z "$version" ]; then
+          echo "Could not find terraform version in .tool-versions" >&2
+          exit 1
+        fi
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+
+    - name: "Set up Terraform"
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ steps.terraform-version.outputs.version }}
     - name: "Check Terraform format"
       shell: bash
       run: |

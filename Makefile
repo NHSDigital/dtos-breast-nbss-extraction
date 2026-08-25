@@ -24,11 +24,11 @@ help: # Print help @Others
 # Bootstrap & Environment
 # ---------------------------------------------------------------------------
 # Configure development environment (main) @Configuration
-config: 
-	_install-tools 
-	_install-uv 
-	githooks-config 
-	dependencies 
+config:
+	_install-tools
+	_install-uv
+	githooks-config
+	dependencies
 
 dependencies: # Install dependencies needed to build and test the project @Pipeline
 	@if [ -f nbss/pyproject.toml ]; then \
