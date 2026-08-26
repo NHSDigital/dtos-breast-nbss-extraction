@@ -1,6 +1,10 @@
 name: "Lint Terraform"
 description: "Lint Terraform"
 inputs:
+  enabled:
+    description: "Whether Terraform linting should run"
+    required: false
+    default: "false"
   root-modules:
     description: "Comma separated list of root module directories to validate, content of the 'infrastructure/environments' is checked by default"
     required: false
@@ -8,14 +12,20 @@ runs:
   using: "composite"
   steps:
     - name: "Check Terraform format"
+      if: ${{ inputs.enabled == 'true' }}
       shell: bash
+      env:
+        FORCE_USE_DOCKER: "true"
       run: |
-        check_only=true scripts/githooks/check-terraform-format.sh
+        check_only=true FORCE_USE_DOCKER=true scripts/githooks/check-terraform-format.sh
     - name: "Validate Terraform"
+      if: ${{ inputs.enabled == 'true' }}
       shell: bash
+      env:
+        FORCE_USE_DOCKER: "true"
       run: |
         stacks=${{ inputs.root-modules }}
         for dir in $(find infrastructure/environments -type f -name '*.tf' -exec dirname {} \; | sort -u; echo ${stacks//,/$'\n'}); do
-          dir=$dir opts="-backend=false" make terraform-init
-          dir=$dir make terraform-validate
+          dir=$dir opts="-backend=false" make -f scripts/terraform/terraform.mk terraform-init
+          dir=$dir make -f scripts/terraform/terraform.mk terraform-validate
         done

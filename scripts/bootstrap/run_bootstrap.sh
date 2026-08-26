@@ -81,7 +81,7 @@ userGroupName="screening_${APP_SHORT_NAME}_${ENV_CONFIG}"
 
 check_prerequisites() {
   local command_name template subscription_id
-  
+
   userGroupPrincipalID=$(az ad group show --group "$userGroupName" --query id -o tsv 2>/dev/null || true)
   if [ -z "$userGroupPrincipalID" ]; then
     log_warn "Required Entra group '[[$userGroupName]]' was not found or cannot be read"

@@ -27,7 +27,7 @@ help: # Print help @Others
 # Bootstrap & Environment
 # ---------------------------------------------------------------------------
 # Configure development environment (main) @Configuration
-config: 
+config:
 	_install-tools
 	_install-uv
 	githooks-config

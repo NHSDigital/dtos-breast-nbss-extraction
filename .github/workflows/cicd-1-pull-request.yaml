@@ -84,7 +84,6 @@ jobs:
           export TERRAFORM_VERSION="${{ steps.variables.outputs.terraform_version }}"
           export VERSION="${{ steps.variables.outputs.version }}"
           export DOES_PULL_REQUEST_EXIST="${{ steps.pr_exists.outputs.does_pull_request_exist }}"
-          
           env | sort
   commit-stage: # Recommended maximum execution time is 2 minutes
     name: "Commit stage"
