@@ -1,36 +1,16 @@
-# This file is for you! Edit it to implement your own hooks (make targets) into
-# the project as automated steps to be executed on locally and in the CD pipeline.
-
+# Note, init.mk includes Terraform make file
 include scripts/init.mk
+include scripts/make/environment.mk
+include scripts/make/bootstrap.mk
+include scripts/make/azure.mk
 
-# ==============================================================================
-
-# Example CI/CD targets are: dependencies, build, publish, deploy, clean, etc.
-
-dependencies: # Install dependencies needed to build and test the project @Pipeline
-	uv sync --directory nbss
-
-build: # Build the project artefact @Pipeline
-	# TODO: Implement the artefact build step
-
-publish: # Publish the project artefact @Pipeline
-	# TODO: Implement the artefact publishing step
-
-deploy: # Deploy the project artefact to the target environment @Pipeline
-	# TODO: Implement the artefact deployment step
-
-clean:: # Clean-up project resources (main) @Operations
-	# TODO: Implement project resources clean-up step
-
-config:: # Configure development environment (main) @Configuration
-	# TODO: Use only 'make' targets that are specific to this project, e.g. you may not need to install Node.js
-	make _install-dependencies
-
-# ==============================================================================
-
-${VERBOSE}.SILENT: \
-	build \
-	clean \
-	config \
-	dependencies \
-	deploy \
+# ---------------------------------------------------------------------------
+# Bootstrap & Environment
+# ---------------------------------------------------------------------------
+# Configure development environment (main) @Configuration
+# This original config differs from init.mk
+# config:
+# 	_install-tools
+# 	_install-uv
+# 	githooks-config
+# 	dependencies
