@@ -6,6 +6,5 @@ scripts/tests/test.mk linguist-vendored
 scripts/init.mk linguist-vendored
 scripts/shellscript-linter.sh linguist-vendored
 
-# Normalize shell scripts to LF to avoid shebang CRLF issues
 *.sh text eol=lf
 scripts/** text eol=lf

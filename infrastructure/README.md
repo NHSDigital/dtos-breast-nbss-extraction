@@ -46,7 +46,7 @@ The main make file depends on other make files to create relevant targets:
 - [Azure targets](../scripts/make/azure.mk) - targets for Azure cloud commands
 - [Bootstrap targets](../scripts/make/bootstrap.mk) - targets to establish initial Terraform resources
 - [Terraform targets](../scripts/make/terraform.mk) - targets for all Terraform commands
-- [Bootstrap orchestrator](../scripts/bash/run_bootstrap.sh) - script to orchestrate the bootstrap process
+- [Bootstrap orchestrator](../scripts/bootstrap/run_bootstrap.sh) - script to orchestrate the bootstrap process
 
 ## The bootstrap process
 
