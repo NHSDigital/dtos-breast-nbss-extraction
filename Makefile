@@ -2,16 +2,19 @@
 .PHONY: help workflow config dependencies githooks-config githooks-run
 .SILENT: help workflow
 .NOTPARALLEL: # this is because make -j could cause race conditions
+.ONESHELL:
+.SHELLFLAGS := -ce
+
+MAKEFLAGS += --no-print-directory # '+=' preserves caller-supplied flags
+SHELL := /bin/bash
 
 ifeq (,$(filter oneshell,$(.FEATURES)))
 $(error .ONESHELL not supported (GNU Make 3.82+ required, found $(MAKE_VERSION)))
 endif
 
-include scripts/make/shared.mk
 include scripts/make/environment.mk
 include scripts/make/bootstrap.mk
 include scripts/make/azure.mk
-include scripts/make/terraform.mk
 
 # ---------------------------------------------------------------------------
 # Help & Meta
@@ -25,10 +28,10 @@ help: # Print help @Others
 # ---------------------------------------------------------------------------
 # Configure development environment (main) @Configuration
 config: 
-	_install-tools 
-	_install-uv 
-	githooks-config 
-	dependencies 
+	_install-tools
+	_install-uv
+	githooks-config
+	dependencies
 
 dependencies: # Install dependencies needed to build and test the project @Pipeline
 	@if [ -f nbss/pyproject.toml ]; then \
@@ -52,4 +55,3 @@ githooks-run: # Run git hooks configured in this repository @Operations
 	pre-commit run \
 		--config scripts/config/pre-commit.yaml \
 		--all-files
-

@@ -12,7 +12,7 @@ At a high level, the delivery flow is:
 ---
 title: Boostrap process flow
 config:
-    look: handDrawn    
+    look: handDrawn
 ---
 flowchart LR
   A("`1. Tools`") --> B("`2. Terraform state`")
@@ -29,9 +29,9 @@ flowchart LR
 | --- | --- |
 | 1. Setup local environment | Ensure required tools are installed and authenticated (make, bash, Azure CLI, Terraform, git). |
 | 2. Setup Terraform state | Create state backend resources (storage and private connectivity) before standard Terraform operations. |
-| 3. Initialise Terraform | Run terraform init to configure backend and download providers and modules. |
-| 4. Generate a resource plan | Run terraform plan to see the proposed delta between current and desired state. |
-| 5. Apply the resource plan | Run terraform apply to execute approved changes. |
+| 3. Initialise Terraform | Run `terraform init` to configure backend and download providers and modules. |
+| 4. Generate a resource plan | Run `terraform plan` to see the proposed delta between current and desired state. |
+| 5. Apply the resource plan | Run `terraform apply` to execute approved changes. |
 
 Terraform requires remote state backend resources. In this repository, bootstrap creates those resources first so later Terraform commands can run consistently.
 
@@ -41,16 +41,16 @@ The repository uses make targets to provide a single, repeatable command interfa
 
 The main make file depends on other make files to create relevant targets:
 
-- [Makefile](../Makefile) - the main entry file
-- [scripts/make/environment.mk](../scripts/make/environment.mk) - targets for setting up environment variables per deployment environment
-- [scripts/make/azure.mk](../scripts/make/azure.mk) - targets for Azure cloud commands
-- [scripts/make/bootstrap.mk](../scripts/make/bootstrap.mk) - targets to establish initial Terraform resources
-- [scripts/make/terraform.mk](../scripts/make/terraform.mk) - targets for all Terraform commands
-- [scripts/bash/run_bootstrap.sh](../scripts/bash/run_bootstrap.sh) - script to orchestrate the bootstrap process
+- [Main make file](../Makefile) - the main entry file
+- [Environment targets](../scripts/make/environment.mk) - targets for setting up environment variables per deployment environment
+- [Azure targets](../scripts/make/azure.mk) - targets for Azure cloud commands
+- [Bootstrap targets](../scripts/make/bootstrap.mk) - targets to establish initial Terraform resources
+- [Terraform targets](../scripts/make/terraform.mk) - targets for all Terraform commands
+- [Bootstrap orchestrator](../scripts/bootstrap/run_bootstrap.sh) - script to orchestrate the bootstrap process
 
 ## The bootstrap process
 
-We use a bootstrap process to provision minimum Azure foundation required for Terraform state management. This process typically only needs to be run once per environment, however if you tear down all resources in the target environment and start afresh, bootstrap ensures Terraform state resources are available. 
+We use a bootstrap process to provision minimum Azure foundation required for Terraform state management. This process typically only needs to be run once per environment, however if you tear down all resources in the target environment and start afresh, bootstrap ensures Terraform state resources are available.
 
 > This process is necessary before running any of the Terraform-related make targets
 
@@ -61,7 +61,7 @@ The following diagram shows an overview of what the bootstrap process does:
 title: Bootstrap process flow
 config:
     look: handDrawn
----                
+---
 flowchart LR
   A("`fa:fa-spinner Run **make dev bootstrap**`") --> BS
 
@@ -111,7 +111,7 @@ Before running bootstrap, several tools and other requirements must be in place:
 
 ## Bootstrap inputs
 
-Many bootstrap inputs have default values which are defined in separate environment files. The environment makefile loads the environment variables per environment target specified (`dev`, `prod`)
+Many bootstrap inputs have default values which are defined in separate environment files. The environment make file loads the environment variables per environment target specified (`dev`, `prod`)
 
 Environment target definitions:
 
@@ -133,19 +133,18 @@ Common variables:
 | AZURE_SUBSCRIPTION | Full display name of the application subscription used for 'az account set'. |
 | HUB_SUBSCRIPTION | Full display name of the hub subscription used to resolve hub subscription ID. |
 
-
 ## Bicep modules
 
-Bicep is used because it's native to Azure Resource Manager, supports subscription-scope deployments, and allows us to easily compose focused modules. For establishing inital Terraform resources, this means we establish predictable orchestration with clear parameters, outputs, and preflight checks via what-if scenarios.
+Bicep is used because it's native to Azure Resource Manager, supports subscription-scope deployments, and allows us to easily compose focused modules. For establishing initial Terraform resources, this means we establish predictable orchestration with clear parameters, outputs, and preflight checks via what-if scenarios.
 
 Each Bicep module covers a single concern, and the top-level `main.bicep` coordinates its dependencies via explicit module outputs rather than implied assumptions.
 
 The Bicep bootstrap modules are found in [infrastructure/bootstrap](bootstrap).
 
 | Bicep file | Creates or configures | Outputs |
-| --- | --- | --- | 
+| --- | --- | --- |
 | [main.bicep](bootstrap/main.bicep) |  | storageAccountId, storagePrivateDNSZoneId, storagePrivateEndpointId, infraResourceGroupId |
-| [terraformStorage.bicep](bootstrap/terraformStorage.bicep) | Terraform state backend resources | Storage account, blob service, terraform-state container, role assignment for Entra group | userGroupPrincipalID and target resource group scope | storageAccountID |
+| [terraformStorage.bicep](bootstrap/terraformStorage.bicep) | Terraform state backend resources | Storage account, blob service, Terraform state container, role assignment for Entra group | userGroupPrincipalID and target resource group scope | storageAccountID |
 | [dns.bicep](bootstrap/dns.bicep) | Private DNS zone lookup | | privateDNSZoneID |
 | [privateEndpoint.bicep](bootstrap/privateEndpoint.bicep) | Private endpoint wiring | | Existing hub VNet and subnet, resourceID, privateDNSZoneID | privateEndpointID |
 
@@ -153,14 +152,13 @@ The Bicep bootstrap modules are found in [infrastructure/bootstrap](bootstrap).
 
 The bootstrap template [infrastructure/bootstrap/main.bicep](bootstrap/main.bicep) accepts:
 
-- enableSoftDelete
-- envConfig
-- region
-- storageAccountRGName
-- storageAccountName
-- appShortName
-- userGroupPrincipalID
-- infraResourceGroupName (optional, defaults internally)
+- `enableSoftDelete`
+- `envConfig`
+- `region`
+- `storageAccountRGName`
+- `storageAccountName`
+- `appShortName`
+- `userGroupPrincipalID`
 
 ## Outputs from bootstrap
 
@@ -180,7 +178,7 @@ Bicep deployment outputs include:
 
 ## How to run bootstrap
 
-From the repository root containing the main `Makefile`, inside a bash terminal enter:
+From the repository root containing the main make file, inside a bash terminal enter:
 
 ```bash
 make dev bootstrap
@@ -210,41 +208,41 @@ make dev terraform-plan
 make dev terraform-apply
 ```
 
---- 
+---
 
 ## Troubleshooting
 
-- ### WSL error: `env: bash\r not found`
+**WSL error: `env: bash\r not found`**
   Cause: shell files are saved with CRLF.
   Fix:
-  - Convert to LF endings.
-  - - Keep .gitattributes enforcing LF for shell scripts.
 
-- ### set: `invalid option pipefail`
+- Convert to LF endings.
+- Keep .gitattributes enforcing LF for shell scripts.
+
+**set: `invalid option pipefail`**
   Cause: usually CRLF line ending symptom.
   Fix:
-  - Convert affected shell files to LF.
 
-- ### Unable to resolve hub subscription
+- Convert affected shell files to LF.
+
+**Unable to resolve hub subscription**
   Cause: HUB_SUBSCRIPTION value does not match a known subscription display name.
   Fix:
-  - Verify values in environment variable files.
-  - Validate account access with Azure CLI.
 
-- ### Required Entra group not found
+- Verify values in environment variable files.
+- Validate account access with Azure CLI.
+
+**Required Entra group not found**
   Cause: missing group or permission issue when querying Entra.
   Fix:
-  - Verify naming pattern `screening_<app-short-name>_<environment>`.
-  - Confirm your account can query Entra groups.
+
+- Verify naming pattern `screening_<app-short-name>_<environment>`.
+- Confirm your account can query Entra groups.
   - use `az login --tenant xxxx` to log into the specified tenant
 
-- ### Failed to clone `dtos-devops-templates` during `terraform-init`
+**Failed to clone `dtos-devops-templates` during `terraform-init`**
   Cause: network access to GitHub blocked, or invalid TERRAFORM_MODULES_REF.
   Fix:
-  - Check connectivity and credentials to github.com.
-  - Verify TERRAFORM_MODULES_REF in environment variables.
-  
-  
 
-
-
+- Check connectivity and credentials to GitHub.com.
+- Verify TERRAFORM_MODULES_REF in environment variables.

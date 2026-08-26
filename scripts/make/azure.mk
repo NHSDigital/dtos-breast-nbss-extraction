@@ -11,7 +11,6 @@ set-az-account: # Set the Azure account for the environment - make set-az-accoun
 	az account show >/dev/null
 	az account set --subscription "${AZURE_SUBSCRIPTION_NAME}"
 
-
 get-subscription-ids: # Retrieve the hub subscription ID based on the subscription name in ${HUB_SUBSCRIPTION} - make get-subscription-ids @Azure
 	$(eval HUB_SUBSCRIPTION_NAME=$(subst ",,$(HUB_SUBSCRIPTION)))
 	$(eval HUB_SUBSCRIPTION_ID=$(shell az account show --query id --output tsv --subscription "${HUB_SUBSCRIPTION_NAME}"))
@@ -30,4 +29,3 @@ get-subscription-ids: # Retrieve the hub subscription ID based on the subscripti
 	echo HUB_SUBSCRIPTION_ID=${HUB_SUBSCRIPTION_ID}
 	echo ARM_SUBSCRIPTION_ID=${ARM_SUBSCRIPTION_ID}
 	echo
-
