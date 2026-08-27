@@ -1,0 +1,5 @@
+ENV_CONFIG=dev
+ENVIRONMENT=dev
+AZURE_SUBSCRIPTION="Digital Screening DToS - DevOps"
+HUB_SUBSCRIPTION="Digital Screening DToS - DevOps"
+ENABLE_SOFT_DELETE=false
