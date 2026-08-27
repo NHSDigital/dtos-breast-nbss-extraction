@@ -147,19 +147,19 @@ def main():
     """)
 
     tables = cache_cursor.fetchall()
+    total = len(tables)
 
-    print("\nWriting tables to Databricks\n")
+    print(f"\nWriting {total} tables to Databricks\n")
 
-    for source_schema, table in tables:
+    for i, (source_schema, table) in enumerate(tables, 1):
+        dest_table_name = f"{source_schema}_{table}".lower()
+        full_dest = f"`{CATALOG}`.`{SCHEMA}`.`{dest_table_name}`"
+
         try:
             # Read from Cache
             sql_table_name = f'"{source_schema}"."{table}"'
             cache_cursor.execute(f"SELECT * FROM {sql_table_name}")
             columns = cache_cursor.description
-
-            # Destination table: devs.bronze.<schema>_<table> (lowercase)
-            dest_table_name = f"{source_schema}_{table}".lower()
-            full_dest = f"`{CATALOG}`.`{SCHEMA}`.`{dest_table_name}`"
 
             # Create table in Databricks
             create_sql = build_create_table_sql(full_dest, columns)
@@ -175,7 +175,7 @@ def main():
                 row_count += len(rows)
 
             print(
-                f"{sql_table_name:<10} - {row_count:>6,} rows x {num_cols} cols → {full_dest}"
+                f"[{i}/{total}] {sql_table_name:<10} - {row_count:>6,} rows x {num_cols} cols → {full_dest}"
             )
 
         except Exception as e:
