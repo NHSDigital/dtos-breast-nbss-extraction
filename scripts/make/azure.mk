@@ -1,7 +1,7 @@
-.SILENT: set-az-account get-subscription-ids
-.PHONY: set-az-account get-subscription-ids
+.SILENT: set-azure-account get-subscription-ids
+.PHONY: set-azure-account get-subscription-ids
 
-set-az-account: # Set the Azure account for the environment - make set-az-account @Azure
+set-azure-account: # Set the Azure account for the environment - make set-azure-account @Azure
 	$(eval AZURE_SUBSCRIPTION_NAME=$(subst ",,$(AZURE_SUBSCRIPTION)))
 	if [ "${SKIP_AZURE_LOGIN}" = "true" ]; then
 		echo "Skipping Azure account selection (SKIP_AZURE_LOGIN=true)"
