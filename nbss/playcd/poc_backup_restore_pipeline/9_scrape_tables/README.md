@@ -108,10 +108,30 @@ uv run -m unittest test_export_app_tables -v
 py -3.12-32 -m unittest test_export_app_tables -v
 ```
 
+### Comparing against the original playCD export
+
+`test_compare_exports.py` is a deeper check that confirms the extracted Databricks tables match the **original playCD CSV export** (`nbss/playcd/data_and_code_export/cache_data_export`), not just the restored Caché instance. It reads the CSVs from disk and queries Databricks, keying both sides by the canonical `<schema>_<table>` name, and checks:
+
+- The table count matches
+- Every playCD CSV has a corresponding Databricks table (nothing missing)
+- No extra Databricks tables exist without a matching CSV
+- Row counts match for each table
+- Column counts match for each table
+
+Unlike `test_export_app_tables.py`, this compares **row and column counts**, so it catches lost or duplicated data. `UTIL` tables with known, expected differences (see "Note on expected row count differences" below) are allowlisted via `KNOWN_DIFF_TABLES` and reported separately rather than failing the run.
+
+It only needs the playCD CSVs on disk and a Databricks connection (no Caché ODBC), so it can run on any machine with an authenticated Databricks CLI profile — it reads `DATABRICKS_PROFILE`, `DATABRICKS_HTTP_PATH`, `CATALOG` and `SCHEMA` from the same `.env`. Because it issues two queries per table it takes several minutes over ~670 tables.
+
+```bash
+# From nbss/ (has the databricks-sql-connector / dotenv deps)
+cd nbss && uv run python playcd/poc_backup_restore_pipeline/9_scrape_tables/test_compare_exports.py
+```
+
 ## Files
 
 - `export_app_tables.py` — The main export script (connects via ODBC, writes tables to a Databricks Unity Catalog)
 - `test_export_app_tables.py` — Verifies that the exported tables in Databricks match the Caché base tables (count, completeness, no extras)
+- `test_compare_exports.py` — Verifies that the exported Databricks tables match the original playCD CSV export, comparing table presence, row counts and column counts
 - `.env` — Connection credentials (not committed to source control; lives in `poc_backup_restore_pipeline`)
 
 ## Troubleshooting
@@ -125,7 +145,7 @@ py -3.12-32 -m unittest test_export_app_tables -v
 
 ## Note on expected row count differences
 
-> These notes come from a **one-off comparison** we ran between the restored export and the original PlayCD export to confirm the backup-restore process did not lose data. The comparison script is no longer part of this pipeline, but the findings are kept here for reference.
+> These notes explain the differences surfaced by `test_compare_exports.py` when comparing the extracted Databricks tables against the original PlayCD export. The `UTIL` tables below are allowlisted in that test's `KNOWN_DIFF_TABLES` so they are reported but do not fail the run.
 
 The APP-schema tables (actual NBSS patient/screening data) matched exactly. However, some `UTIL` tables showed minor row count differences. These are expected and do not indicate data loss:
 
