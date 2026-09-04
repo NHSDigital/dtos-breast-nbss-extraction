@@ -5,7 +5,7 @@ You need to have Azure CLI installed and be logged in on your Microsoft Entra ac
 
 ## Requirements
 
-- **AzCopy** — Install from <https://learn.microsoft.com/en-us/azure/storage/common/storage-use-AzCopy-v10>
+- **AzCopy** — Install from <https://learn.microsoft.com/en-us/azure/storage/common/storage-use-AzCopy-v10>. To add AzCopy to your PATH, follow the [instructions](../README.md#install-azcopy-on-windows).
 - **Azure CLI** — Install from <https://aka.ms/installazurecliwindows>
 
 ## Usage
