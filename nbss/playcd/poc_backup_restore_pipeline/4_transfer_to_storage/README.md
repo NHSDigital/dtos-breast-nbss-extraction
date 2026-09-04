@@ -8,6 +8,31 @@ You need to have Azure CLI installed and be logged in on your Microsoft Entra ac
 - **AzCopy** — Install from <https://learn.microsoft.com/en-us/azure/storage/common/storage-use-AzCopy-v10>
 - **Azure CLI** — Install from <https://aka.ms/installazurecliwindows>
 
+## Install AzCopy on Windows
+
+- Open the [AzCopy download page](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-AzCopy-v10) and download the latest **Windows 64-bit** ZIP file.
+- Extract the ZIP file and copy the folder containing `azcopy.exe` to `C:\azcopy`.
+- Open PowerShell and add `C:\azcopy` to the User PATH:
+
+```powershell
+$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if (($userPath -split ';') -notcontains 'C:\azcopy') {
+ [Environment]::SetEnvironmentVariable("Path", "$userPath;C:\azcopy", "User")
+}
+```
+
+Alternatively, add the folder manually through the Windows settings. Open the Windows Start menu and search for **Edit environment variables for your account**. Select **Environment Variables...**. In **User variables for [your username]**, select `Path` and choose **Edit**. Select **New**, enter `C:\azcopy`, and select **OK** on each open dialog.
+
+- Close and reopen PowerShell or VS Code so that the updated PATH is loaded.
+- Verify that AzCopy is available:
+
+```powershell
+Get-Command azcopy
+azcopy --version
+```
+
+The User PATH makes AzCopy available to the Windows account that installed it. Administrator permissions are not required unless the user cannot create the `C:\azcopy` folder.
+
 ## Usage
 
 Run the script interactively to be prompted to input the storage account name and container name.
