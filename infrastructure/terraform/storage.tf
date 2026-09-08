@@ -1,5 +1,21 @@
 locals {
   upload_storage_account_name = substr(replace("sa${var.app_short_name}${var.environment}upload", "/[^0-9a-z]/", ""), 0, 24)
+
+  # Format: "<container-name>:<entra-security-group-display-name>"
+  bso_containers = [
+    # this is a default container
+    "uploads:screening_nbsse_dev",
+
+    # these are the PR-designated containers. Only add them here when approved by the security team
+  ]
+
+  bso_container_map = {
+    for item in local.bso_containers :
+    trimspace(split(":", item)[0]) => {
+      container_name       = trimspace(split(":", item)[0])
+      security_group_name  = trimspace(split(":", item)[1])
+    }
+  }
 }
 
 resource "azurerm_storage_account" "upload" {
@@ -28,8 +44,9 @@ resource "azurerm_storage_account" "upload" {
   shared_access_key_enabled     = true
 }
 
-resource "azurerm_storage_container" "upload" {
-  name                  = "uploads"
+resource "azurerm_storage_container" "bso" {
+  for_each              = local.bso_container_map
+  name                  = each.value.container_name
   storage_account_id    = azurerm_storage_account.upload.id
   container_access_type = "private"
 }
