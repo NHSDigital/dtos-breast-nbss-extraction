@@ -1,7 +1,7 @@
 locals {
   upload_storage_account_name = substr(replace("sa${var.app_short_name}${var.environment}upload", "/[^0-9a-z]/", ""), 0, 24)
 
-  # Format: "<container-name>:<entra-security-group-display-name>"
+  # Format: "landing_<bso-name>_<bso_code>:<entra-security-group-display-name>"
   bso_containers = [
     # this is a default container
     "uploads:screening_nbsse_dev",
