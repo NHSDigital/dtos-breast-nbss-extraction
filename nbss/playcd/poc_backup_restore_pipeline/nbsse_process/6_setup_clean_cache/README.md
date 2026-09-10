@@ -30,7 +30,7 @@ The installer will be at `C:\Temp\CacheInstaller\Setup\cache setup\cache-2018.1.
 
 ### Step 2 — Run the silent install script
 
-From `nbss/playcd/poc_backup_restore_pipeline/6_setup_clean_cache`:
+From `nbss/playcd/poc_backup_restore_pipeline/nbsse_process/6_setup_clean_cache`:
 
 ```powershell
 .\install_cache_silent.bat -InstallerPath "C:\Temp\CacheInstaller\Setup\cache setup\cache-2018.1.4.505.1-win_x64.exe"

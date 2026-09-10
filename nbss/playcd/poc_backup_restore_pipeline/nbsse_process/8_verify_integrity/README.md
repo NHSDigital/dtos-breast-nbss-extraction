@@ -6,7 +6,7 @@ This checks that all database blocks are self-consistent and all globals are tra
 
 ## Usage
 
-From `nbss/playcd/poc_backup_restore_pipeline/8_verify_integrity`:
+From `nbss/playcd/poc_backup_restore_pipeline/nbsse_process/8_verify_integrity`:
 
 ```batch
 .\run_integrity_check.bat

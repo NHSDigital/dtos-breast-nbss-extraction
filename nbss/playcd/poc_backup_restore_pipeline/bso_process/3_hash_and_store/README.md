@@ -4,7 +4,7 @@
 
 The `transfer_hash_zip.ps1` PowerShell script computes a SHA-256 hash of the backup zip file and stores it as a secret in Azure Key Vault. This allows the integrity of the backup to be verified at any point — if the hash stored in Key Vault matches the hash of the file you download, the file has not been tampered with or corrupted.
 
-1. **Resolves the zip file** — Uses the path supplied via `-ZipPath`, or auto-selects the most recently modified `*.zip` in the `poc_backup_restore_pipeline` directory
+1. **Resolves the zip file** — Uses the path supplied via `-ZipPath`, or auto-selects the most recently modified `*.zip` in the `bso_process` directory
 2. **Computes a SHA-256 hash** — Produces a unique fingerprint of the file contents
 3. **Checks Azure CLI login** — Automatically launches `az login` if not already authenticated
 4. **Stores the hash in Key Vault** — Creates a secret named `{YYYYMMDD}-{BsoCode}-hash` e.g. `20260715-A0001344-hash`
@@ -27,11 +27,11 @@ The `.bat` wrapper (`transfer_hash_zip.bat`) bypasses PowerShell execution polic
 |-----------|---------|-------------|
 | `-BsoCode` | *(mandatory)* | BSO code embedded in the secret name e.g. `A0001344` |
 | `-KeyVaultName` | `nbsse-dev-kv` | Name of the Azure Key Vault |
-| `-ZipPath` | *(newest `*.zip` in `poc_backup_restore_pipeline`)* | Full path to the zip file to hash |
+| `-ZipPath` | *(newest `*.zip` in `bso_process`)* | Full path to the zip file to hash |
 
 ## Usage
 
-From `nbss/playcd/poc_backup_restore_pipeline/3_hash_and_store`:
+From `nbss/playcd/poc_backup_restore_pipeline/bso_process/3_hash_and_store`:
 
 ### Simple (auto-detects newest zip)
 

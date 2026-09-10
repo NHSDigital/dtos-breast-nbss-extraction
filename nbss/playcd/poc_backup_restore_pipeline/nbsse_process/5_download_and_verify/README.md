@@ -4,7 +4,7 @@
 
 The `download_latest_blob.ps1` PowerShell script downloads the most recently modified blob from an Azure Storage Account container, computes its SHA-256 hash, and compares it against the hash stored in Azure Key Vault to verify the file has not been tampered with or corrupted during transfer.
 
-1. **Downloads the latest blob** — Lists all blobs in the specified container, identifies the most recently modified, and downloads it to `poc_backup_restore_pipeline`
+1. **Downloads the latest blob** — Lists all blobs in the specified container, identifies the most recently modified, and downloads it to `nbsse_process`
 2. **Computes a SHA-256 hash** — Produces a fingerprint of the downloaded file
 3. **Retrieves the stored hash from Key Vault** — Uses the zip filename (without extension) + `-hash` as the secret name
 4. **Compares the hashes** — If they match, the file integrity is confirmed; if not, the script exits with an error
@@ -26,11 +26,11 @@ The `download_latest_blob.ps1` PowerShell script downloads the most recently mod
 
 ## Why Run Through the .bat File?
 
-The `.bat` wrapper (`download_latest_blob.bat`) bypasses PowerShell execution policy restrictions — the same reason as `create_nbss_back_up.bat`. See [Why Run Through the .bat File?](../2_zip_backup_files/README.md#why-run-through-the-bat-file) in step 2.
+The `.bat` wrapper (`download_latest_blob.bat`) bypasses PowerShell execution policy restrictions — the same reason as `create_nbss_back_up.bat`. See [Why Run Through the .bat File?](../../bso_process/2_zip_backup_files/README.md#why-run-through-the-bat-file) in step 2.
 
 ## Usage
 
-From `nbss/playcd/poc_backup_restore_pipeline/5_download_and_verify`:
+From `nbss/playcd/poc_backup_restore_pipeline/nbsse_process/5_download_and_verify`:
 
 ### Simple (default Key Vault)
 
@@ -54,7 +54,7 @@ From `nbss/playcd/poc_backup_restore_pipeline/5_download_and_verify`:
 
 ```output
 Latest blob: 20260715-A0001344.zip
-Download complete: C:\...\poc_backup_restore_pipeline\20260715-A0001344.zip
+Download complete: C:\...\poc_backup_restore_pipeline\nbsse_process\20260715-A0001344.zip
 SHA-256    : ...
 Secret name: 20260715-A0001344-hash
 Stored hash: ...
@@ -76,7 +76,7 @@ WARNING: MISMATCH: Downloaded file hash does NOT match the stored hash.
 
 ## Notes
 
-- The file is downloaded to `poc_backup_restore_pipeline`
+- The file is downloaded to `nbsse_process`
 - The secret name is derived from the blob filename: `{filename-without-extension}-hash` e.g. blob `20260715-A0001344.zip` → secret `20260715-A0001344-hash`
 - If the container has multiple blobs, the most recently modified one is selected
 - A hash mismatch indicates the file may have been corrupted or tampered with — do not proceed with the restore

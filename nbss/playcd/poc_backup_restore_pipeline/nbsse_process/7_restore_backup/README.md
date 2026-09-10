@@ -41,7 +41,7 @@ The script performs the restore in a mix of automated and interactive steps:
 
 ### Simple Usage (Recommended)
 
-From `nbss/playcd/poc_backup_restore_pipeline/7_restore_backup`:
+From `nbss/playcd/poc_backup_restore_pipeline/nbsse_process/7_restore_backup`:
 
 ```batch
 .\restore_nbss_back_up.bat -BackupZip "..\20260708-A0001344.zip"

@@ -37,7 +37,7 @@ The `.bat` wrapper file (`create_nbss_back_up.bat`) **bypasses this restriction*
 - **Administrator privileges** — The script must run as Administrator to stop/start the Caché service
 - **InterSystems Caché** — Must be installed at the specified CacheRoot path
 - **NBSS installation** — Must exist at the specified NbssRoot path
-- **Backup Process** — A manual backup must have been recently run via the [NBSS Backup](../1_manual_nbss_backup/README.md) steps before proceeding
+- **Backup Process** — A manual backup must have been recently run via the [NBSS Backup](../../1_manual_nbss_backup/README.md) steps before proceeding
 
 ### Parameters
 
@@ -49,7 +49,7 @@ The `.bat` wrapper file (`create_nbss_back_up.bat`) **bypasses this restriction*
 
 ### Simple Usage (Recommended)
 
-From `nbss/playcd/poc_backup_restore_pipeline/2_zip_backup_files`:
+From `nbss/playcd/poc_backup_restore_pipeline/bso_process/2_zip_backup_files`:
 
 ```PowerShell
 .\create_nbss_back_up.bat
@@ -83,7 +83,7 @@ Output filename: `{YYYYMMDD}-A0001344.zip`
 
 ## Output
 
-The script creates a zip file in `poc_backup_restore_pipeline` with the format `{YYYYMMDD}-A000.zip` (using the default BSO code).
+The script creates a zip file in `bso_process` with the format `{YYYYMMDD}-A000.zip` (using the default BSO code).
 
 Example output:
 
