@@ -6,11 +6,11 @@ onto a fresh Caché installation, verify it, and scrape the tables into Databric
 It follows on from the [BSO process](../bso_process/README.md), which produces and
 uploads the backup zip. The steps should be followed sequentially:
 
-5. [Retrieve the file from storage and verify integrity](5_download_and_verify/README.md)
-6. [Set up a clean Caché DB](6_setup_clean_cache/README.md)
-7. [Restore the backup onto a clean Caché installation](7_restore_backup/README.md)
-8. [Verify database integrity](8_verify_integrity/README.md)
-9. [Scrape the tables from Caché to Databricks](9_scrape_tables/README.md)
+- **Step 5** — [Retrieve the file from storage and verify integrity](5_download_and_verify/README.md)
+- **Step 6** — [Set up a clean Caché DB](6_setup_clean_cache/README.md)
+- **Step 7** — [Restore the backup onto a clean Caché installation](7_restore_backup/README.md)
+- **Step 8** — [Verify database integrity](8_verify_integrity/README.md)
+- **Step 9** — [Scrape the tables from Caché to Databricks](9_scrape_tables/README.md)
 
 Details of each step are set out in the linked READMEs.
 

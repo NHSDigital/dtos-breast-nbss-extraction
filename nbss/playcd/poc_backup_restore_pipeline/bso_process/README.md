@@ -4,9 +4,9 @@ This is the **first half** of the NBSS backup-restore proof of concept. It is ru
 on (or against) the source BSO machine to produce a verified backup zip and push
 it to Azure. The steps should be followed sequentially:
 
-2. [Create zip file containing the required backup files](2_zip_backup_files/README.md)
-3. [Hash the zip and store the hash in Azure Key Vault](3_hash_and_store/README.md)
-4. [Transfer the zip file to Azure Storage](4_transfer_to_storage/README.md)
+- **Step 2** — [Create zip file containing the required backup files](2_zip_backup_files/README.md)
+- **Step 3** — [Hash the zip and store the hash in Azure Key Vault](3_hash_and_store/README.md)
+- **Step 4** — [Transfer the zip file to Azure Storage](4_transfer_to_storage/README.md)
 
 > Step 1 — [Backup NBSS manually](../1_manual_nbss_backup/README.md) — is optional
 > and only required if a scheduled overnight backup is not available. It lives
@@ -28,8 +28,6 @@ Details of each step are set out in the linked READMEs.
 
 - **Azure CLI** — <https://aka.ms/installazurecliwindows>
 - **AzCopy v10** — <https://learn.microsoft.com/en-us/azure/storage/common/storage-use-AzCopy-v10>
-
-**Note: once AzCopy is downloaded, extract and add the executable file (`azcopy.exe`) to `bso_process/4_transfer_to_storage`; this is required to run step 4.**
 
 ### Access & permissions
 
