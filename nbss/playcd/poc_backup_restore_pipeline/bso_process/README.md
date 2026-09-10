@@ -34,7 +34,7 @@ Details of each step are set out in the linked READMEs.
 - **Administrator privileges** on the Windows machine (step 2 stops/starts the Caché service)
 - **Azure CLI authentication** (`az login`) with a Microsoft Entra account that has:
   - **Key Vault Secrets Officer** on the target Key Vault (to store hashes)
-  - **Storage Account key access** or **Storage Blob Data Contributor** (for SAS token generation and blob upload)
+  - **Storage Account key access** (required by the SAS token generation script)
 
 ### Other
 
