@@ -19,7 +19,7 @@ The script:
 - The InterSystems ODBC driver must be installed (this is included with the Caché installation)
 - The [Databricks CLI](https://docs.databricks.com/en/dev-tools/cli/install.html) must be installed and authenticated
 - A running SQL warehouse in the target Databricks workspace
-- Create a `.env` file in `nbss/playcd/poc_backup_restore_pipeline` with the following:
+- Create a `.env` file in `nbss/playcd/poc_backup_restore_pipeline/nbsse_process` with the following:
 
 ```ENVIRONMENT
 DRIVER=InterSystems ODBC
@@ -47,7 +47,7 @@ Reference: [InterSystems ODBC](https://docs.intersystems.com/irislatest/csp/docb
 From PowerShell:
 
 ```PowerShell
-cd nbss\playcd\poc_backup_restore_pipeline\9_scrape_tables
+cd nbss\playcd\poc_backup_restore_pipeline\nbsse_process\9_scrape_tables
 uv run export_app_tables.py
 ```
 
@@ -57,7 +57,7 @@ This will write the tables directly to the Databricks Unity Catalog.
 
 - In Parallels, install Python 32-bit: open PowerShell and run `winget install Python.Python.3.12 --architecture x86`
 - Then run `py -3.12-32 -m pip install pyodbc python-dotenv`
-- Open File Explorer (in Windows) and find `dtos-breast-nbss-extraction\nbss\playcd\poc_backup_restore_pipeline\9_scrape_tables`. Most likely in 'Home on Mac (Z:/)' drive. Copy the path (for example: `Z:\dtos-breast-nbss-extraction\nbss\playcd\poc_backup_restore_pipeline\9_scrape_tables`).
+- Open File Explorer (in Windows) and find `dtos-breast-nbss-extraction\nbss\playcd\poc_backup_restore_pipeline\nbsse_process\9_scrape_tables`. Most likely in 'Home on Mac (Z:/)' drive. Copy the path (for example: `Z:\dtos-breast-nbss-extraction\nbss\playcd\poc_backup_restore_pipeline\nbsse_process\9_scrape_tables`).
 - Run `cd <path from above>`
 - Run `py -3.12-32 export_app_tables.py`
 
@@ -124,7 +124,7 @@ It only needs the playCD CSVs on disk and a Databricks connection (no Caché ODB
 
 ```bash
 # From nbss/ (has the databricks-sql-connector / dotenv deps)
-cd nbss && uv run python playcd/poc_backup_restore_pipeline/9_scrape_tables/test_compare_exports.py
+cd nbss && uv run python playcd/poc_backup_restore_pipeline/nbsse_process/9_scrape_tables/test_compare_exports.py
 ```
 
 ## Files
@@ -132,7 +132,7 @@ cd nbss && uv run python playcd/poc_backup_restore_pipeline/9_scrape_tables/test
 - `export_app_tables.py` — The main export script (connects via ODBC, writes tables to a Databricks Unity Catalog)
 - `test_export_app_tables.py` — Verifies that the exported tables in Databricks match the Caché base tables (count, completeness, no extras)
 - `test_compare_exports.py` — Verifies that the exported Databricks tables match the original playCD CSV export, comparing table presence, row counts and column counts
-- `.env` — Connection credentials (not committed to source control; lives in `poc_backup_restore_pipeline`)
+- `.env` — Connection credentials (not committed to source control; lives in `nbsse_process`)
 
 ## Troubleshooting
 

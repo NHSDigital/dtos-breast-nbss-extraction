@@ -1,247 +1,35 @@
 # NBSS Backup-Restore process - Proof of Concept
 
-This documentation and code details the steps required to backup and restore an NBSS instance. The steps should be followed sequentially as follows
+This documentation and code details the steps required to back up and restore an
+NBSS instance. The pipeline is split into two processes that run on different
+machines and at different times:
 
-## Table of contents
+## Processes
 
-1. [Backup NBSS manually](1_manual_nbss_backup/README.md) (optional: only if scheduled overnight backup not available)
-2. [Create zip file containing the required backup files](2_zip_backup_files/README.md)
-3. [Hash the zip and store the hash in Azure Key Vault](3_hash_and_store/README.md)
-4. [Transfer the zip file to Azure Storage](4_transfer_to_storage/README.md)
-5. [Retrieve the file from storage and verify integrity](5_download_and_verify/README.md)
-6. [Set up a clean Caché DB](6_setup_clean_cache/README.md)
-7. [Restore the backup onto a clean Caché installation](7_restore_backup/README.md)
-8. [Verify database integrity](8_verify_integrity/README.md)
-9. [Scrape the tables from Caché to Databricks](9_scrape_tables/README.md)
+| Process | Steps | Runs on | Purpose |
+|---------|-------|---------|---------|
+| [BSO process](bso_process/README.md) | 2–4 | Source BSO machine | Create a backup zip, hash it into Key Vault, and upload it to Azure Storage |
+| [NBSSE process](nbsse_process/README.md) | 5–9 | Clean restore-target machine | Download and verify the zip, restore it onto a clean Caché install, verify integrity, and scrape the tables into Databricks |
 
-Details of each of the steps are set out in the linked READMEs.
+The two processes are joined through Azure Storage: the BSO process uploads the
+backup zip, and the NBSSE process downloads it. Each process has its own README
+with its own prerequisites, variables and quickstart.
 
-## Prerequisites
+## Optional pre-step
 
-### Azure resources
+- [1. Backup NBSS manually](1_manual_nbss_backup/README.md) — only needed if a
+  scheduled overnight backup is not available. Run this before the BSO process.
 
-- **Azure Storage Account** with a blob container for backup storage
-- **Azure Key Vault** for storing and retrieving backup file hashes
+## Shared reference docs
 
-### Databricks resources
-
-- **Databricks workspace** with a Unity Catalog catalog and schema to write the exported tables to (step 9)
-- **A running SQL warehouse** in that workspace (its HTTP path is needed for the `.env` file in step 9)
-
-### Software
-
-- **Azure CLI** — <https://aka.ms/installazurecliwindows>
-- **AzCopy v10** — <https://learn.microsoft.com/en-us/azure/storage/common/storage-use-AzCopy-v10>
-- **Databricks CLI** — <https://docs.databricks.com/en/dev-tools/cli/install.html> (authenticated, for step 9)
-- **InterSystems Caché PlayCD installer zip** 2018.1.4.505.1
-- **Python 3.12** with `uv` (Windows) or 32-bit Python (Mac via Parallels)
-
-**Note, once AzCopy is downloaded, extract and add the executable file (`azcopy.exe`) to `poc_backup_restore_pipeline/4_transfer_to_storage`, this is required to run step 4.**
-
-### Access & permissions
-
-- **Administrator privileges** on the Windows machine (to stop/start Caché services)
-- **Azure CLI authentication** (`az login`) with a Microsoft Entra account that has:
-  - **Key Vault Secrets Officer** on the target Key Vault (to store hashes)
-  - **Key Vault Secrets User** on the target Key Vault (to retrieve hashes)
-  - **Storage Account key access** or **Storage Blob Data Contributor** (for SAS token generation and blob upload/download)
-- **Databricks CLI authentication** with permission to create schemas and tables in the target Unity Catalog catalog and to use the SQL warehouse (for step 9)
-
-### Other
-
-- **TCP ports 1973 and 57773 available** (for the CACHERESTORE Caché instance)
-- **No NBSS/Caché installation** on the restore target machine (remove `C:\NBSS\` and `C:\InterSystems\` too if applicable)
-
-## Variables
-
-Gather these values before starting. They are referenced as `<variable_name>` throughout the quickstart below.
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `<bso_code>` | BSO code for the screening unit being backed up | `A0001344` |
-| `<storage_account>` | Azure Storage Account name for backup storage | `bsrtestdatalake` |
-| `<container_name>` | Blob container within the storage account | `bso-001-container` |
-| `<key_vault_name>` | Azure Key Vault name for storing backup hashes | `nbsse-dev-kv` |
-| `<play_cd_zip>` | Path to the PlayCD zip containing the Caché installer | `C:\Temp\PlayCD.zip` |
-| `<cache_password>` | Password for the CACHERESTORE Caché instance (`SYS` for a fresh install) | `SYS` |
-
-## Install AzCopy on Windows
-
-- Open the [AzCopy download page](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-AzCopy-v10) and download the latest **Windows 64-bit** ZIP file.
-- Extract the ZIP file and copy the folder containing `azcopy.exe` to `C:\azcopy`.
-- Open PowerShell and add `C:\azcopy` to the User PATH:
-
-```powershell
-$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-if (($userPath -split ';') -notcontains 'C:\azcopy') {
- [Environment]::SetEnvironmentVariable("Path", "$userPath;C:\azcopy", "User")
-}
-```
-
-Alternatively, add the folder manually through the Windows settings. Open the Windows Start menu and search for **Edit environment variables for your account**. Select **Environment Variables...**. In **User variables for [your username]**, select `Path` and choose **Edit**. Select **New**, enter `C:\azcopy`, and select **OK** on each open dialog.
-
-- Close and reopen PowerShell or VS Code so that the updated PATH is loaded.
-- Verify that AzCopy is available:
-
-```powershell
-Get-Command azcopy
-azcopy --version
-```
-
-The User PATH makes AzCopy available to the Windows account that installed it. Administrator permissions are not required unless the user cannot create the `C:\azcopy` folder.
-
----
-
-## Quickstart
-
-Simplest path through the pipeline. All commands run from the relevant step sub-folder.
-
-### 1. Backup NBSS (skip if overnight backup is recent)
-
-In Caché Terminal:
-
-```ObjectScript
-ZN "%SYS"
-DO ^BACKUP
-```
-
-Select `1` (Backup) → `1` (Full) → type `BACKUP_CACHE.DAT` → `enter` no description → `y` to start. After backup is complete type `HALT`.
-
-### 2. Zip the backup files
-
-```Powershell
-.\create_nbss_back_up.bat -BsoCode "<bso_code>"
-```
-
-### 3. Hash and store in Key Vault
-
-Login to Azure if you aren't already in this session:
-
-```Powershell
-az login
-```
-
-```Powershell
-.\transfer_hash_zip.bat <bso_code>
-```
-
-### 4. Upload to Azure Storage
-
-Login to Azure if you aren't already in this session:
-
-```Powershell
-az login
-```
-
-```Powershell
-.\generate-container-sas-token.bat <storage_account> <container_name>
-```
-
-Copy the returned SAS token and run:
-
-```Powershell
-./azcopy copy "../<YYYYMMDD>-<bso_code>.zip" "https://<storage_account>.blob.core.windows.net/<container_name>?<sas-token>"
-```
-
-### 5. Download and verify integrity
-
-Login to Azure if you aren't already in this session:
-
-```Powershell
-az login
-```
-
-```Powershell
-.\download_latest_blob.bat <container_name> <storage_account>
-```
-
-Confirms hash matches Key Vault. Do not proceed if there is a mismatch.
-
-### 6. Install clean Caché
-
-Extract the PlayCD installer:
-
-```powershell
-Expand-Archive "<play_cd_zip>" -DestinationPath "C:\Temp\CacheInstaller"
-```
-
-The installer will be at `C:\Temp\CacheInstaller\Setup\cache setup\cache-2018.1.4.505.1-win_x64.exe`.
-
-then:
-
-```Powershell
-.\install_cache_silent.bat -InstallerPath "C:\Temp\CacheInstaller\Setup\cache setup\cache-2018.1.4.505.1-win_x64.exe"
-```
-
-### 7. Restore the backup
-
-```Powershell
-.\restore_nbss_back_up.bat -BackupZip ".\<YYYYMMDD>-<bso_code>.zip"
-```
-
-When the interactive `^DBREST` terminal opens, respond:
-
-| Prompt | Response |
-|--------|----------|
-| `1 =>` | `2` |
-| `Do you want to set switch 10...?` | Enter |
-| `Device:` | `C:\InterSystems\CacheRestore\mgr\BACKUP_CACHE.DAT` |
-| `Is this the backup you want to start restoring?` | Enter |
-| `c:\intersystems\cache\mgr\` | `X` |
-| `c:\intersystems\cache\mgr\cacheaudit\` | `X` |
-| `c:\intersystems\cache\mgr\user\` | `X` |
-| `c:\nbss\cache\dem_app\` | `C:\NBSS\Cache\dem_app\` |
-| `c:\nbss\cache\dem_dat\` | `C:\NBSS\Cache\dem_dat\` |
-| `Do you want to change this list?` | Enter |
-| `Confirm Restore?` | `Yes` |
-| `Device:` (next volume) | `STOP` |
-| `Do you have any more backups to restore?` | `No` |
-| `Apply: 1 =>` | `4` |
-
-Type `HALT` to exit. The script continues automatically.
-
-### 8. Verify integrity
-
-```Powershell
-.\run_integrity_check.bat
-```
-
-Exit code `0` = passed.
-
-### 9. Export tables to Databricks
-
-Create `.env` in this folder (`poc_backup_restore_pipeline`):
-
-```text
-DRIVER=InterSystems ODBC
-SERVER=localhost
-PORT=1973
-DATABASE=NBSS
-UID=_SYSTEM
-PWD=<cache_password>
-DATABRICKS_PROFILE=dev
-DATABRICKS_HTTP_PATH=/sql/1.0/warehouses/<your-warehouse-id>
-CATALOG = <catalog>
-SCHEMA = <schema>
-```
-
-Then, from `9_scrape_tables`:
-
-```Python
-uv run export_app_tables.py
-```
-
-This connects to Caché via ODBC and writes every base table directly to the Databricks Unity Catalog (`<catalog>.<schema>`) as managed Delta tables, named `<source_schema>_<table>` in lowercase.
-
-To verify the export matches the source tables:
-
-```Python
-uv run -m unittest test_export_app_tables -v
-```
+- [Azure Key Vault — create, retrieve and set RBAC for secrets](docs/azure_key_vault.md)
+- [Create a storage container in an existing storage account](docs/generate_storage_container.md)
+- [Creating a Caché user](docs/create_admin_user.md)
 
 ## A note on naming convention
 
-A consistent naming pattern is used across all steps to ensure the hash stored in Key Vault can be matched to the correct blob in storage. The pattern is:
+A consistent naming pattern links the hash stored in Key Vault to the correct
+blob in storage:
 
 | Artifact | Format | Example |
 |----------|--------|---------|
@@ -249,4 +37,5 @@ A consistent naming pattern is used across all steps to ensure the hash stored i
 | Key Vault secret name | `{YYYYMMDD}-{BsoCode}-hash` | `20260715-A0001344-hash` |
 | Blob name in storage container | `{YYYYMMDD}-{BsoCode}.zip` | `20260715-A0001344.zip` |
 
-The download script (step 4) derives the secret name by stripping the `.zip` extension from the blob name and appending `-hash`.
+The NBSSE download script (step 5) derives the secret name by stripping the
+`.zip` extension from the blob name and appending `-hash`.

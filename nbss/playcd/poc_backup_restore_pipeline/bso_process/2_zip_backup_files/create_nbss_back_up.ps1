@@ -11,7 +11,7 @@
             - NBSS\Labels       (all contents)
             - All CACHE.DAT database files found under InterSystems\Cache
             - InterSystems\Cache\mgr\BACKUP_CACHE.DAT (latest backup only)
-      3. Saves the zip to poc_backup_restore_pipeline, named:
+      3. Saves the zip to bso_process, named:
             {YYYYMMDD}-{BsoCode}.zip
       4. Restarts the Caché instance once the zip is complete.
 

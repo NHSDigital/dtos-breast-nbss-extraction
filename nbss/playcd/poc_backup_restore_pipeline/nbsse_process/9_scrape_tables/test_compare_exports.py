@@ -13,7 +13,7 @@ The playCD export lives on disk as CSVs (one per table, grouped by schema).
 The extracted tables live in a Databricks Unity Catalog, named
 `<schema>_<table>` in lowercase. Both sides are keyed by that canonical name.
 
-Requires a `.env` in nbss/playcd/poc_backup_restore_pipeline with:
+Requires a `.env` in nbss/playcd/poc_backup_restore_pipeline/nbsse_process with:
     DATABRICKS_PROFILE, DATABRICKS_HTTP_PATH, CATALOG, SCHEMA
 and an authenticated Databricks CLI profile.
 """
@@ -30,7 +30,7 @@ _THIS_DIR = os.path.dirname(__file__)
 
 # Original playCD CSV export (one CSV per table, grouped by schema directory).
 PLAYCD_DIR = os.path.join(
-    _THIS_DIR, "..", "..", "data_and_code_export", "cache_data_export"
+    _THIS_DIR, "..", "..", "..", "data_and_code_export", "cache_data_export"
 )
 
 load_dotenv(os.path.join(_THIS_DIR, "..", ".env"))
@@ -125,7 +125,7 @@ class TestCompareExports(unittest.TestCase):
         if not DATABRICKS_HTTP_PATH or not CATALOG or not SCHEMA:
             raise RuntimeError(
                 "Missing Databricks config. Set DATABRICKS_HTTP_PATH, CATALOG and "
-                "SCHEMA in nbss/playcd/poc_backup_restore_pipeline/.env"
+                "SCHEMA in nbss/playcd/poc_backup_restore_pipeline/nbsse_process/.env"
             )
 
         try:
