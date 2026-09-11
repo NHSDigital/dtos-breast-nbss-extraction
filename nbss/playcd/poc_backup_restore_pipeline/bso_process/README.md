@@ -53,18 +53,11 @@ Gather these values before starting. They are referenced as `<variable_name>` th
 
 ## Install AzCopy on Windows
 
-- Open the [AzCopy download page](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-AzCopy-v10) and download the latest **Windows 64-bit** ZIP file.
-- Extract the ZIP file and copy the folder containing `azcopy.exe` to `C:\azcopy`.
-- Open PowerShell and add `C:\azcopy` to the User PATH:
+Run the [`install_azcopy.bat`](install_azcopy.bat) script to download AzCopy, install it and add it to the User PATH:
 
 ```powershell
-$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-if (($userPath -split ';') -notcontains 'C:\azcopy') {
- [Environment]::SetEnvironmentVariable("Path", "$userPath;C:\azcopy", "User")
-}
+.\install_azcopy.bat
 ```
-
-Alternatively, add the folder manually through the Windows settings. Open the Windows Start menu and search for **Edit environment variables for your account**. Select **Environment Variables...**. In **User variables for [your username]**, select `Path` and choose **Edit**. Select **New**, enter `C:\azcopy`, and select **OK** on each open dialog.
 
 - Close and reopen PowerShell or VS Code so that the updated PATH is loaded.
 - Verify that AzCopy is available:
@@ -74,7 +67,11 @@ Get-Command azcopy
 azcopy --version
 ```
 
-The User PATH makes AzCopy available to the Windows account that installed it. Administrator permissions are not required unless the user cannot create the `C:\azcopy` folder.
+By default, AzCopy is installed to `C:\Program Files (x86)\azcopy`, which requires Administrator privileges. To install to a different, user-writable folder instead, pass `-InstallPath`:
+
+```powershell
+.\install_azcopy.bat -InstallPath "D:\tools\azcopy"
+```
 
 ## Related docs
 
