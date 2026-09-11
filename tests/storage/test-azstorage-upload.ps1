@@ -1,27 +1,16 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [string]$StorageAccountName,
+    [string]$StorageAccountName = "sanbssedevupload",
     [string]$ContainerName = "uploads",
     [string]$LocalFilePath = "",
     [string]$SasToken = "",
-    [string]$TenantId = ""
+    [string]$TenantId = "",
+    [switch]$GenerateSasToken
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
-
-function Get-TrimmedSasToken {
-    param(
-        [string]$Token
-    )
-
-    if ([string]::IsNullOrWhiteSpace($Token)) {
-        return ""
-    }
-
-    return $Token.TrimStart("?")
-}
 
 if (-not $LocalFilePath) {
     $LocalFilePath = Join-Path $PSScriptRoot "sample-upload.txt"
@@ -43,14 +32,52 @@ if (-not (Test-Path $LocalFilePath)) {
 $fileName = Split-Path -Leaf $LocalFilePath
 $containerUrl = "https://$StorageAccountName.blob.core.windows.net/$ContainerName"
 
-Write-Host "Container endpoint: $containerUrl"
-Write-Host "File to upload: $LocalFilePath"
+Write-Host "Container endpoint: " -NoNewline
+Write-Host "$containerUrl" -ForegroundColor DarkYellow
 
-$sasToken = Get-TrimmedSasToken -Token $SasToken
+Write-Host "File to upload: " -NoNewline
+Write-Host "$LocalFilePath" -ForegroundColor DarkYellow
 
-if ($sasToken) {
-    Write-Host "Uploading with SAS token using Az.Storage..."
-    $storageContext = New-AzStorageContext -StorageAccountName $StorageAccountName -SasToken $sasToken
+$currentContext = Get-AzContext -ErrorAction SilentlyContinue
+if ($currentContext -and $currentContext.Account -and $currentContext.Account.Id) {
+    Write-Host "Current user: " -NoNewline
+    Write-Host "$($currentContext.Account.Id)" -ForegroundColor DarkYellow
+    Write-Host "Account type: " -NoNewline
+    Write-Host "$($currentContext.Account.Type)" -ForegroundColor DarkYellow
+}
+else {
+    $azAccount = az account show --query user.name -o tsv 2>$null
+    if ($azAccount) {
+        Write-Host "Current user: " -NoNewline
+        Write-Host "$azAccount" -ForegroundColor DarkYellow
+        Write-Host "Account type: " -NoNewline
+        Write-Host "Azure CLI" -ForegroundColor DarkYellow
+    }
+    else {
+        Write-Host "Current user: " -NoNewline
+        Write-Host "not signed in" -ForegroundColor DarkYellow
+        Write-Host "Account type: " -NoNewline
+        Write-Host "not available" -ForegroundColor DarkYellow
+    }
+}
+
+Write-Host ""
+
+if (-not $SasToken -and $GenerateSasToken.IsPresent) {
+    Write-Host "⚠️ No SAS token provided. Generating a new token..."
+    $SasToken = New-AzStorageContainerSASToken -Name $ContainerName -Context (New-AzStorageContext -StorageAccountName $StorageAccountName -UseConnectedAccount) -Permission ac -Expiry (Get-Date).AddDays(5)
+
+    Write-Host "Generated SAS token: " -NoNewLine
+    Write-Host "$SasToken" -ForegroundColor Blue
+}
+
+if ($SasToken) {
+    $normalisedSasToken = $SasToken.TrimStart("?")
+
+    Write-Host "Uploading with SAS token using " -NoNewline
+    Write-Host "Az.Storage" -ForegroundColor Yellow -NoNewline
+    Write-Host "..."
+    $storageContext = New-AzStorageContext -StorageAccountName $StorageAccountName -SasToken $normalisedSasToken
 
     Set-AzStorageBlobContent `
         -File $LocalFilePath `
@@ -59,47 +86,65 @@ if ($sasToken) {
         -Context $storageContext `
         -Force | Out-Null
 
-    # Write-Host "Verifying the blob exists via SAS-authenticated context..."
-    # $uploadedBlob = Get-AzStorageBlob -Container $ContainerName -Blob $fileName -Context $storageContext
-    # Write-Host "Uploaded blob: $($uploadedBlob.Name)"
-    # Write-Host "Blob length: $($uploadedBlob.Length)"
+    $uploadedBlob = Get-AzStorageBlob -Context $storageContext -Container $ContainerName -Blob $fileName -ErrorAction SilentlyContinue
+    if (-not $uploadedBlob) {
+        throw "❌ Failed to verify upload using SAS token. Blob '$fileName' was not found in container '$ContainerName'."
+    }
+
     exit 0
 }
 
-if (-not $TenantId) {
-    $currentContext = Get-AzContext -ErrorAction SilentlyContinue
-    if ($currentContext -and $currentContext.Tenant -and $currentContext.Tenant.Id) {
-        $TenantId = $currentContext.Tenant.Id
+Write-Host ""
+Write-Host "ℹ️ Checking for existing Azure session..."
+$currentContext = Get-AzContext -ErrorAction SilentlyContinue
+if (-not $currentContext -or -not $currentContext.Tenant -or -not $currentContext.Tenant.Id) {
+    $azTenantId = az account show --query tenantId -o tsv 2>$null
+    if (-not $azTenantId) {
+        $azTenantId = $TenantId
+    }
+
+    if (-not $azTenantId) {
+        Write-Host ""
+        Write-Host "⚠️ No current Azure CLI or Az context. Logging into Azure..."
+        if ($TenantId) {
+            Connect-AzAccount -Tenant $TenantId | Out-Null
+        }
+        else {
+            Connect-AzAccount | Out-Null
+        }
+    }
+    else {
+        Write-Host "Logging into Azure PowerShell using tenant " -NoNewLine
+        Write-Host "$azTenantId..." -ForegroundColor DarkYellow
+        Connect-AzAccount -Tenant $azTenantId | Out-Null
     }
 }
 
+$currentContext = Get-AzContext -ErrorAction SilentlyContinue
+if (-not $currentContext -or -not $currentContext.Tenant -or -not $currentContext.Tenant.Id) {
+    throw "❌ Context cannot be null. Please log in using Connect-AzAccount before creating the storage context."
+}
+
 if (-not $TenantId) {
-    Write-Warning "No SAS token was provided and no Azure tenant was discovered in the current PowerShell session."
-    Write-Host ""
-    Write-Host "To use Entra ID, please first sign in with:"
-    Write-Host "Connect-AzAccount -Tenant <tenant-id>"
-    Write-Host ""
-    Write-Host "Then rerun this script without -SasToken. Please pass -TenantId <tenant-id> for the script to connect automatically ."
-    exit 1
+    $TenantId = $currentContext.Tenant.Id
 }
 
-if (-not (Get-AzContext -ErrorAction SilentlyContinue)) {
-    Write-Host "Signing in with Entra ID using tenant $TenantId..."
-    Connect-AzAccount -Tenant $TenantId | Out-Null
-}
-
-$entraContext = New-AzStorageContext -StorageAccountName $StorageAccountName -UseConnectedAccount
+Write-Host "   ✅ Connected to tenant " -NoNewline
+Write-Host "$TenantId." -ForegroundColor DarkYellow
 
 Write-Host ""
-Write-Host "Uploading with Entra ID authentication using Az.Storage..."
+Write-Host "ℹ️ Uploading with Entra ID using " -NoNewline
+Write-Host "Az.Storage" -ForegroundColor Yellow -NoNewline
+Write-Host "..."
+
+$entraContext = New-AzStorageContext -StorageAccountName $StorageAccountName -UseConnectedAccount
+Write-Host "   ✅ Created storage context with Entra ID authentication..."
+
 Set-AzStorageBlobContent `
     -File $LocalFilePath `
     -Container $ContainerName `
     -Blob $fileName `
     -Context $entraContext `
     -Force | Out-Null
-
-# Write-Host "Verifying the blob exists via Entra-authenticated context..."
-# $uploadedEntraBlob = Get-AzStorageBlob -Container $ContainerName -Blob $fileName -Context $entraContext
-# Write-Host "Uploaded blob: $($uploadedEntraBlob.Name)"
-# Write-Host "Blob length: $($uploadedEntraBlob.Length)"
+Write-Host "   ✅ Successfully uploaded using Entra ID authentication."
+Write-Host ""
