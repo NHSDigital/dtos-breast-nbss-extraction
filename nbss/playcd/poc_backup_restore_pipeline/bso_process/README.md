@@ -53,7 +53,7 @@ Gather these values before starting. They are referenced as `<variable_name>` th
 
 ## Install AzCopy on Windows
 
-Run the [`install_azcopy.bat`](install_azcopy.bat) script to download AzCopy, install it and add it to the User PATH:
+Run the [`install_azcopy.bat`](4_transfer_to_storage/install_azcopy.bat) script to download AzCopy, install it and add it to the User PATH:
 
 ```powershell
 .\install_azcopy.bat
