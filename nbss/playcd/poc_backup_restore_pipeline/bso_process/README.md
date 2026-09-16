@@ -56,7 +56,7 @@ Gather these values before starting. They are referenced as `<variable_name>` th
 Run the [`install_azcopy.bat`](4_transfer_to_storage/install_azcopy.bat) script to download AzCopy, install it and add it to the User PATH:
 
 ```powershell
-.\install_azcopy.bat
+.\4_transfer_to_storage\install_azcopy.bat
 ```
 
 - Close and reopen PowerShell or VS Code so that the updated PATH is loaded.
