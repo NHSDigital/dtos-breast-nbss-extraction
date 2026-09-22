@@ -5,8 +5,7 @@ on (or against) the source BSO machine to produce a verified backup zip and push
 it to Azure. The steps should be followed sequentially:
 
 - **Step 2** — [Create zip file containing the required backup files](2_zip_backup_files/README.md)
-- **Step 3** — [Hash the zip and store the hash in Azure Key Vault](3_hash_and_store/README.md)
-- **Step 4** — [Transfer the zip file to Azure Storage](4_transfer_to_storage/README.md)
+- **Step 3** — [Transfer the zip file to Azure Storage](3_transfer_to_storage/README.md)
 
 > Step 1 — [Backup NBSS manually](../1_manual_nbss_backup/README.md) — is optional
 > and only required if a scheduled overnight backup is not available. It lives
@@ -53,10 +52,10 @@ Gather these values before starting. They are referenced as `<variable_name>` th
 
 ## Install AzCopy on Windows
 
-Run the [`install_azcopy.bat`](4_transfer_to_storage/install_azcopy.bat) script to download AzCopy, install it and add it to the User PATH:
+Run the [`install_azcopy.bat`](3_transfer_to_storage/install_azcopy.bat) script to download AzCopy, install it and add it to the User PATH:
 
 ```powershell
-.\4_transfer_to_storage\install_azcopy.bat
+.\3_transfer_to_storage\install_azcopy.bat
 ```
 
 - Close and reopen PowerShell or VS Code so that the updated PATH is loaded.
@@ -90,19 +89,7 @@ Simplest path through the BSO process. All commands run from the relevant step s
 .\create_nbss_back_up.bat -BsoCode "<bso_code>"
 ```
 
-### 3. Hash and store in Key Vault
-
-Login to Azure if you aren't already in this session:
-
-```Powershell
-az login
-```
-
-```Powershell
-.\transfer_hash_zip.bat <bso_code>
-```
-
-### 4. Upload to Azure Storage
+### 3. Upload to Azure Storage
 
 Login to Azure if you aren't already in this session:
 
@@ -130,4 +117,4 @@ A consistent naming pattern is used across all steps to ensure the hash stored i
 | Key Vault secret name | `{YYYYMMDD}-{BsoCode}-hash` | `20260715-A0001344-hash` |
 | Blob name in storage container | `{YYYYMMDD}-{BsoCode}.zip` | `20260715-A0001344.zip` |
 
-The NBSSE download script (step 5) derives the secret name by stripping the `.zip` extension from the blob name and appending `-hash`.
+The NBSSE download script (step 4) derives the secret name by stripping the `.zip` extension from the blob name and appending `-hash`.
