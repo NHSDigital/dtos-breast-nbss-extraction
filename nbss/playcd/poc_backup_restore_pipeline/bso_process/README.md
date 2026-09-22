@@ -117,7 +117,7 @@ az login
 Copy the returned SAS token and run:
 
 ```Powershell
-./azcopy copy "../<YYYYMMDD>-<bso_code>.zip" "https://<storage_account>.blob.core.windows.net/<container_name>?<sas-token>"
+./azcopy copy "../<YYYYMMDD>-<bso_code>.zip" "https://<storage_account>.blob.core.windows.net/<container_name>?<sas-token>" --put-md5
 ```
 
 ## A note on naming convention

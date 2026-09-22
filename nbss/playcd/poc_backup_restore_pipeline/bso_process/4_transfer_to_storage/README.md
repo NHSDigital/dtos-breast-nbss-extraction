@@ -38,7 +38,7 @@ Once the command is run, if you have the correct permissions and the right accou
 Fill the command with the relevant info and append the SAS token to the end. The easiest way to upload the file is to run the AzCopy command from the same directory as the file and just specify the file name in the local path to file section.
 
 ```PowerShell
-azcopy copy "<local path to file to upload>" "https://<storageaccount name>.blob.core.windows.net/<storagecontainer name>?<sas token>"
+azcopy copy "<local path to file to upload>" "https://<storageaccount name>.blob.core.windows.net/<storagecontainer name>?<sas token>" --put-md5
 ```
 
 Once run, if successful, you should see the command return that it has done a write operation to the storage container.
