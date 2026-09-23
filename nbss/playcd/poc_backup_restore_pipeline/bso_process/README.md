@@ -110,14 +110,10 @@ Login to Azure if you aren't already in this session:
 az login
 ```
 
-```Powershell
-.\generate-container-sas-token.bat <storage_account> <container_name>
-```
-
-Copy the returned SAS token and run:
+run the AzCopy command:
 
 ```Powershell
-./azcopy copy "../<YYYYMMDD>-<bso_code>.zip" "https://<storage_account>.blob.core.windows.net/<container_name>?<sas-token>"
+./azcopy copy "../<YYYYMMDD>-<bso_code>.zip" "https://<storage_account>.blob.core.windows.net/<container_name>"
 ```
 
 ## A note on naming convention
