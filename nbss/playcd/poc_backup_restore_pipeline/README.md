@@ -8,8 +8,8 @@ machines and at different times:
 
 | Process | Steps | Runs on | Purpose |
 |---------|-------|---------|---------|
-| [BSO process](bso_process/README.md) | 2–4 | Source BSO machine | Create a backup zip, hash it into Key Vault, and upload it to Azure Storage |
-| [NBSSE process](nbsse_process/README.md) | 5–9 | Clean restore-target machine | Download and verify the zip, restore it onto a clean Caché install, verify integrity, and scrape the tables into Databricks |
+| [BSO process](bso_process/README.md) | 2, 3 | Source BSO machine | Create a backup zip and upload it to Azure Storage |
+| [NBSSE process](nbsse_process/README.md) | 4–8 | Clean restore-target machine | Download and verify the zip, restore it onto a clean Caché install, verify integrity, and scrape the tables into Databricks |
 
 The two processes are joined through Azure Storage: the BSO process uploads the
 backup zip, and the NBSSE process downloads it. Each process has its own README
@@ -37,5 +37,5 @@ blob in storage:
 | Key Vault secret name | `{YYYYMMDD}-{BsoCode}-hash` | `20260715-A0001344-hash` |
 | Blob name in storage container | `{YYYYMMDD}-{BsoCode}.zip` | `20260715-A0001344.zip` |
 
-The NBSSE download script (step 5) derives the secret name by stripping the
+The NBSSE download script (step 4) derives the secret name by stripping the
 `.zip` extension from the blob name and appending `-hash`.

@@ -17,7 +17,7 @@ You need to have Azure CLI installed and be logged in on your Microsoft Entra ac
 Run the below AzCopy command:
 
 ```PowerShell
-azcopy copy "<local path to file to upload>" "https://<storageaccount name>.blob.core.windows.net/<storagecontainer name>"
+azcopy copy "<local path to file to upload>" "https://<storageaccount name>.blob.core.windows.net/<storagecontainer name>" --put-md5
 ```
 
 Once run, if successful, you should see the command return that it has done a write operation to the storage container.

@@ -6,11 +6,11 @@ onto a fresh Caché installation, verify it, and scrape the tables into Databric
 It follows on from the [BSO process](../bso_process/README.md), which produces and
 uploads the backup zip. The steps should be followed sequentially:
 
-- **Step 5** — [Retrieve the file from storage and verify integrity](5_download_and_verify/README.md)
-- **Step 6** — [Set up a clean Caché DB](6_setup_clean_cache/README.md)
-- **Step 7** — [Restore the backup onto a clean Caché installation](7_restore_backup/README.md)
-- **Step 8** — [Verify database integrity](8_verify_integrity/README.md)
-- **Step 9** — [Scrape the tables from Caché to Databricks](9_scrape_tables/README.md)
+- **Step 4** — [Retrieve the file from storage and verify integrity](4_download_and_verify/README.md)
+- **Step 5** — [Set up a clean Caché DB](5_setup_clean_cache/README.md)
+- **Step 6** — [Restore the backup onto a clean Caché installation](6_restore_backup/README.md)
+- **Step 7** — [Verify database integrity](7_verify_integrity/README.md)
+- **Step 8** — [Scrape the tables from Caché to Databricks](8_scrape_tables/README.md)
 
 Details of each step are set out in the linked READMEs.
 
@@ -19,17 +19,17 @@ Details of each step are set out in the linked READMEs.
 ### Azure resources
 
 - **Azure Storage Account** with the blob container the backup was uploaded to (by the BSO process)
-- **Azure Key Vault** holding the backup file hash (used to verify the download in step 5)
+- **Azure Key Vault** holding the backup file hash (used to verify the download in step 4)
 
 ### Databricks resources
 
-- **Databricks workspace** with a Unity Catalog catalog and schema to write the exported tables to (step 9)
-- **A running SQL warehouse** in that workspace (its HTTP path is needed for the `.env` file in step 9)
+- **Databricks workspace** with a Unity Catalog catalog and schema to write the exported tables to (step 8)
+- **A running SQL warehouse** in that workspace (its HTTP path is needed for the `.env` file in step 8)
 
 ### Software
 
-- **Azure CLI** — <https://aka.ms/installazurecliwindows> (step 5)
-- **Databricks CLI** — <https://docs.databricks.com/en/dev-tools/cli/install.html> (authenticated, for step 9)
+- **Azure CLI** — <https://aka.ms/installazurecliwindows> (step 4)
+- **Databricks CLI** — <https://docs.databricks.com/en/dev-tools/cli/install.html> (authenticated, for step 8)
 - **InterSystems Caché PlayCD installer zip** 2018.1.4.505.1
 - **Python 3.12** with `uv` (Windows) or 32-bit Python (Mac via Parallels)
 
@@ -39,7 +39,7 @@ Details of each step are set out in the linked READMEs.
 - **Azure CLI authentication** (`az login`) with a Microsoft Entra account that has:
   - **Key Vault Secrets User** on the target Key Vault (to retrieve hashes)
   - **Storage Account key access** or **Storage Blob Data Contributor** (for blob download)
-- **Databricks CLI authentication** with permission to create schemas and tables in the target Unity Catalog catalog and to use the SQL warehouse (for step 9)
+- **Databricks CLI authentication** with permission to create schemas and tables in the target Unity Catalog catalog and to use the SQL warehouse (for step 8)
 
 ### Other
 
@@ -70,7 +70,7 @@ Gather these values before starting. They are referenced as `<variable_name>` th
 
 Simplest path through the NBSSE process. All commands run from the relevant step sub-folder. The zip is downloaded into `nbsse_process`.
 
-### 5. Download and verify integrity
+### 4. Download and verify integrity
 
 Login to Azure if you aren't already in this session:
 
@@ -84,7 +84,7 @@ az login
 
 Confirms hash matches Key Vault. Do not proceed if there is a mismatch.
 
-### 6. Install clean Caché
+### 5. Install clean Caché
 
 Extract the PlayCD installer:
 
@@ -100,7 +100,7 @@ then:
 .\install_cache_silent.bat -InstallerPath "C:\Temp\CacheInstaller\Setup\cache setup\cache-2018.1.4.505.1-win_x64.exe"
 ```
 
-### 7. Restore the backup
+### 6. Restore the backup
 
 ```Powershell
 .\restore_nbss_back_up.bat -BackupZip "..\<YYYYMMDD>-<bso_code>.zip"
@@ -127,7 +127,7 @@ When the interactive `^DBREST` terminal opens, respond:
 
 Type `HALT` to exit. The script continues automatically.
 
-### 8. Verify integrity
+### 7. Verify integrity
 
 ```Powershell
 .\run_integrity_check.bat
@@ -135,7 +135,7 @@ Type `HALT` to exit. The script continues automatically.
 
 Exit code `0` = passed.
 
-### 9. Export tables to Databricks
+### 8. Export tables to Databricks
 
 Create `.env` in this folder (`nbsse_process`):
 
@@ -152,7 +152,7 @@ CATALOG = <catalog>
 SCHEMA = <schema>
 ```
 
-Then, from `9_scrape_tables`:
+Then, from `8_scrape_tables`:
 
 ```Python
 uv run export_app_tables.py
@@ -177,4 +177,4 @@ the correct blob in storage:
 | Key Vault secret name | `{YYYYMMDD}-{BsoCode}-hash` | `20260715-A0001344-hash` |
 | Blob name in storage container | `{YYYYMMDD}-{BsoCode}.zip` | `20260715-A0001344.zip` |
 
-The download script (step 5) derives the secret name by stripping the `.zip` extension from the blob name and appending `-hash`.
+The download script (step 4) derives the secret name by stripping the `.zip` extension from the blob name and appending `-hash`.
