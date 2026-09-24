@@ -100,7 +100,7 @@ az login
 run the AzCopy command:
 
 ```Powershell
-./azcopy copy "../<YYYYMMDD>-<bso_code>.zip" "https://<storage_account>.blob.core.windows.net/<container_name>" --put-md5
+azcopy copy "../<YYYYMMDD>-<bso_code>.zip" "https://<storage_account>.blob.core.windows.net/<container_name>" --put-md5
 ```
 
 ## A note on naming convention
