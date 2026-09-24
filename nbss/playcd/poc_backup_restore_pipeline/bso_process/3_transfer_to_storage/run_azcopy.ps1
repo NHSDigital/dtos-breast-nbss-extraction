@@ -20,6 +20,10 @@ Write-Host "$LocalFilePath" -ForegroundColor DarkYellow
 Write-Host "Uploading with AzCopy (auth=Entra)..." -ForegroundColor Yellow
 
 azcopy login --tenant-id $TenantId
+if ($LASTEXITCODE -ne 0) {
+    throw "❌ AzCopy login with Entra authentication failed. Exit code = $LASTEXITCODE"
+}
+
 # do we want the --overwrite=true flag or not?
 azcopy copy "$LocalFilePath" "$containerUrl" `
     --from-to=LocalBlob `
