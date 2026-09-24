@@ -1,6 +1,5 @@
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)]
     [string]$StorageAccountName = "sanbssedevupload",
     [string]$ContainerName = "uploads",
     [string]$LocalFilePath = "",
