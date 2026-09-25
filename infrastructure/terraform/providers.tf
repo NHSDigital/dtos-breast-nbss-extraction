@@ -8,6 +8,10 @@ terraform {
       source  = "hashicorp/azuread"
       version = "3.4.0"
     }
+    azapi = {
+      source  = "Azure/azapi"
+      version = "~> 2.0"
+    }
   }
   backend "azurerm" {
     container_name       = "terraform-state"

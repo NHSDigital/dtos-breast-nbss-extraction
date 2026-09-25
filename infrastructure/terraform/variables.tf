@@ -27,3 +27,9 @@ variable "arm_subscription_id" {
   description = "Subscription ID of the application ARM subscription"
   type        = string
 }
+
+variable "enable_defender_for_storage" {
+  description = "Enable Microsoft Defender for Storage for the configured storage account and containers"
+  type        = bool
+  default     = true
+}
