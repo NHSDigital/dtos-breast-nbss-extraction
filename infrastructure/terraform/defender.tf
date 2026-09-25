@@ -1,3 +1,10 @@
+
+locals {
+  defender_storage_accounts = {
+    upload = azurerm_storage_account.upload.id
+  }
+}
+
 resource "azapi_resource_action" "defender_storage" {
   for_each = local.defender_storage_accounts
 
@@ -7,7 +14,7 @@ resource "azapi_resource_action" "defender_storage" {
 
   body = {
     properties = {
-      isEnabled = true
+      isEnabled = var.enable_defender_for_storage
 
       # only provide if the storage accounts absolutely must have their own settings
       overrideSubscriptionLevelSettings = true
@@ -24,11 +31,5 @@ resource "azapi_resource_action" "defender_storage" {
         isEnabled = true
       }
     }
-  }
-}
-
-locals {
-  defender_storage_accounts = {
-    upload = azurerm_storage_account.upload.id
   }
 }

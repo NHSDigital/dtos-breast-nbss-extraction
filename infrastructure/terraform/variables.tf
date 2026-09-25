@@ -31,5 +31,5 @@ variable "arm_subscription_id" {
 variable "enable_defender_for_storage" {
   description = "Enable Microsoft Defender for Storage for the configured storage account and containers"
   type        = bool
-  default     = false
+  default     = true
 }
