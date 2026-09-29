@@ -27,3 +27,41 @@ variable "arm_subscription_id" {
   description = "Subscription ID of the application ARM subscription"
   type        = string
 }
+
+variable "enable_defender_for_storage" {
+  description = "Enable Microsoft Defender for Storage for the configured storage account and containers"
+  type        = bool
+  default     = false
+}
+
+# defender for storage variables
+
+variable "override_subscription_settings_enabled" {
+  description = "Override subscription level settings for Microsoft Defender for Storage"
+  type        = bool
+  default     = true
+}
+
+variable "malware_scanning_on_upload_enabled" {
+  description = "Enable malware scanning on upload for Microsoft Defender for Storage"
+  type        = bool
+  default     = true
+}
+
+variable "malware_scanning_on_upload_cap_gb_per_month" {
+  description = "Cap for malware scanning on upload in GB per month for Microsoft Defender for Storage"
+  type        = number
+  default     = 5000
+}
+
+variable "sensitive_data_discovery_enabled" {
+  description = "Enable sensitive data discovery for Microsoft Defender for Storage"
+  type        = bool
+  default     = true
+}
+
+variable "scan_is_enabled" {
+  description = "Enable Microsoft Defender for Storage scanning"
+  type        = bool
+  default     = true
+}
