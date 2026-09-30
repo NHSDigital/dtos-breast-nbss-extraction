@@ -50,8 +50,7 @@ function Install-WingetPackage {
         [Parameter(Mandatory)][string]$Version
     )
 
-    $installed = winget list --exact --id $Id --accept-source-agreements --disable-interactivity 2>$null |
-        Select-String -SimpleMatch $Id
+    $installed = winget list --exact --id $Id 2>$null | Select-String -SimpleMatch $Id
     if ($installed) {
         Write-Host "$DisplayName is already installed. Skipping."
         return
