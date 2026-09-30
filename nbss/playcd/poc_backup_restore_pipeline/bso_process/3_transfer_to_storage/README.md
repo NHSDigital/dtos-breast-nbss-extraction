@@ -4,13 +4,15 @@ The upload script signs in to Azure CLI with your Microsoft Entra account, then 
 
 ## Requirements
 
-- **AzCopy** — Install from <https://learn.microsoft.com/en-us/azure/storage/common/storage-use-AzCopy-v10>, or install and add it to the PATH by running:
-
-```powershell
-.\install_azcopy.bat
-```
+- **AzCopy** — Install from <https://learn.microsoft.com/en-us/azure/storage/common/storage-use-AzCopy-v10>
 
 - **Azure CLI** — Install from <https://aka.ms/installazurecliwindows>
+
+or install both tools by running this script which uses winget to add the tools to your environment:
+
+```powershell
+.\install_tools.bat
+```
 
 ## Usage
 
