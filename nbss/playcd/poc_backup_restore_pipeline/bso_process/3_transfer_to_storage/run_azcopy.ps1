@@ -34,7 +34,7 @@ Write-Host "Uploading with AzCopy (auth=Entra)..." -ForegroundColor Yellow
 # do we want the --overwrite=true flag or not?
 azcopy copy "$LocalFilePath" "$containerUrl" `
     --from-to=LocalBlob `
-    --overwrite=true `
+    --overwrite=false `
     --blob-type=BlockBlob `
     --log-level=INFO `
     --put-md5
