@@ -28,12 +28,6 @@ variable "arm_subscription_id" {
   type        = string
 }
 
-variable "enable_defender_for_storage" {
-  description = "Enable Microsoft Defender for Storage for the configured storage account and containers"
-  type        = bool
-  default     = false
-}
-
 # defender for storage variables
 
 variable "override_subscription_settings_enabled" {
@@ -45,7 +39,7 @@ variable "override_subscription_settings_enabled" {
 variable "malware_scanning_on_upload_enabled" {
   description = "Enable malware scanning on upload for Microsoft Defender for Storage"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "malware_scanning_on_upload_cap_gb_per_month" {

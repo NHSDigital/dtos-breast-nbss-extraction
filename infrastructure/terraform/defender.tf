@@ -1,44 +1,43 @@
 locals {
-  defender_upload_storage_account_name =substr(replace("sa${var.app_short_name}${var.environment}upload", "/[^0-9a-z]/", ""), 0, 24)
+  defender_upload_storage_account_name =substr(replace("sa${var.app_short_name}${var.environment}defender", "/[^0-9a-z]/", ""), 0, 24)
+
   defender_containers = [
-    "clean_scans",
-    "quarantine_scans"
+    "clean-scans",
+    "quarantine-scans"
   ]
 
   defender_target_storage_accounts = {
-    for storage_account_id in toset([
-      for container in values(local.upload_container_urls) : container.storage_account_id
-    ]) :
-    storage_account_id => storage_account_id
+    for container_key, container in local.upload_container_urls :
+    container_key => container.storage_account_id
   }
 }
 
-# Turn on Defender for all trust upload storage accounts
-resource "azapi_resource" "defender_storage" {
+# Configure Defender for all trust upload storage accounts
+# Use "update" to modify existing Defender for Storage settings rather than creating new ones
+resource "azapi_update_resource" "defender_settings" {
   for_each  = local.defender_target_storage_accounts
 
   type      = "Microsoft.Security/defenderForStorageSettings@2026-01-01-preview"
-  name      = "current"
-  parent_id = each.value
+  resource_id = "${each.value}/providers/Microsoft.Security/defenderForStorageSettings/current"
 
   body = {
     properties = {
-      isEnabled = var.scan_is_enabled
+        isEnabled = var.scan_is_enabled
 
-      # only provide if the storage accounts absolutely must have their own settings
-      overrideSubscriptionLevelSettings = var.override_subscription_settings_enabled
+        # only provide if the storage accounts absolutely must have their own settings
+        overrideSubscriptionLevelSettings = var.override_subscription_settings_enabled
 
-      malwareScanning = {
+        sensitiveDataDiscovery = {
+          isEnabled = var.sensitive_data_discovery_enabled && var.scan_is_enabled
+        }
+
+        malwareScanning = {
           blobScanResultsOptions = "BlobIndexTags"
           onUpload = {
             isEnabled     = var.malware_scanning_on_upload_enabled && var.scan_is_enabled
             capGBPerMonth = var.malware_scanning_on_upload_cap_gb_per_month
           }
         }
-
-      sensitiveDataDiscovery = {
-        isEnabled = var.sensitive_data_discovery_enabled && var.scan_is_enabled
-      }
     }
   }
 }
@@ -48,7 +47,7 @@ resource "azapi_resource" "defender_storage" {
 # Since Defender storage accounts are not publicly accessible, we don't need to worry about write-only
 # permissions as we do with the client landing containers
 
-resource "azurerm_storage_account" "defender_scanned_uploads" {
+resource "azurerm_storage_account" "defender_storage_account" {
   name                = local.defender_upload_storage_account_name
   resource_group_name = azurerm_resource_group.deploy_resource_group.name
   location            = azurerm_resource_group.deploy_resource_group.location
@@ -70,9 +69,9 @@ resource "azurerm_storage_account" "defender_scanned_uploads" {
   shared_access_key_enabled     = true
 }
 
-resource "azurerm_storage_container" "scanned_uploads" {
+resource "azurerm_storage_container" "defender_containers" {
   for_each              = toset(local.defender_containers)
   name                  = each.key
-  storage_account_id    = azurerm_storage_account.defender_scanned_uploads.id
+  storage_account_id    = azurerm_storage_account.defender_storage_account.id
   container_access_type = "private"
 }
