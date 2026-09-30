@@ -1,6 +1,13 @@
-output "upload_container_urls" {
-  value = {
+locals {
+  upload_container_urls = {
     for container_key, container in azurerm_storage_container.bso :
-    container_key => "${azurerm_storage_account.upload.primary_blob_endpoint}${container.name}"
+    container_key => {
+      endpoint           = container.id
+      storage_account_id = container.storage_account_id
+    }
   }
+}
+
+output "upload_container_urls" {
+  value = local.upload_container_urls
 }
