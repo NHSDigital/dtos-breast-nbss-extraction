@@ -33,7 +33,7 @@ Details of each step are set out in the linked READMEs.
 - **Administrator privileges** on the Windows machine (step 2 stops/starts the Caché service)
 - **Azure CLI authentication** (`az login`) with a Microsoft Entra account that has:
   - **Key Vault Secrets Officer** on the target Key Vault (to store hashes)
-  - **Storage Account key access** (required by the SAS token generation script)
+  - **Storage Blob Data Contributor** (or **Storage Blob Data Owner**) `add` privileges on the target storage account for the upload
 
 ### Other
 
@@ -44,10 +44,11 @@ Details of each step are set out in the linked READMEs.
 Gather these values before starting. They are referenced as `<variable_name>` throughout the quickstart below.
 
 | Variable | Description | Example |
-|----------|-------------|---------|
+| ---------- | ------------- | --------- |
 | `<bso_code>` | BSO code for the screening unit being backed up | `A0001344` |
 | `<storage_account>` | Azure Storage Account name for backup storage | `bsrtestdatalake` |
 | `<container_name>` | Blob container within the storage account | `bso-001-container` |
+| `<tenant_id>` | Microsoft Entra tenant ID associated with the storage account (not the subscription ID) | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` |
 | `<key_vault_name>` | Azure Key Vault name for storing backup hashes | `nbsse-dev-kv` |
 
 ## Install AzCopy on Windows
@@ -91,26 +92,6 @@ Simplest path through the BSO process. All commands run from the relevant step s
 
 ### 3. Upload to Azure Storage
 
-Login to Azure if you aren't already in this session:
-
-```Powershell
-az login
+```powershell
+.\run_azcopy.ps1 -LocalFilePath "..\<YYYYMMDD>-<bso_code>.zip" -TenantId "<tenant_id>" -StorageAccountName "<storage_account>" -ContainerName "<container_name>"
 ```
-
-run the AzCopy command:
-
-```Powershell
-azcopy copy "../<YYYYMMDD>-<bso_code>.zip" "https://<storage_account>.blob.core.windows.net/<container_name>" --put-md5
-```
-
-## A note on naming convention
-
-A consistent naming pattern is used across all steps to ensure the hash stored in Key Vault can be matched to the correct blob in storage. The pattern is:
-
-| Artifact | Format | Example |
-|----------|--------|---------|
-| Zip filename (uploaded to storage) | `{YYYYMMDD}-{BsoCode}.zip` | `20260715-A0001344.zip` |
-| Key Vault secret name | `{YYYYMMDD}-{BsoCode}-hash` | `20260715-A0001344-hash` |
-| Blob name in storage container | `{YYYYMMDD}-{BsoCode}.zip` | `20260715-A0001344.zip` |
-
-The NBSSE download script (step 4) derives the secret name by stripping the `.zip` extension from the blob name and appending `-hash`.
