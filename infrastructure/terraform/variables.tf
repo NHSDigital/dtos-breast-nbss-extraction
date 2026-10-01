@@ -16,6 +16,10 @@ variable "environment" {
 variable "hub" {
   description = "Hub name (dev or prod)"
   type        = string
+  validation {
+    condition   = contains(["dev", "prod"], var.hub)
+    error_message = "Hub must be either 'dev' or 'prod'"
+  }
 }
 
 variable "hub_subscription_id"{
