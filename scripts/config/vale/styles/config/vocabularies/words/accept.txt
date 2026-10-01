@@ -26,4 +26,3 @@ lockfile
 CsessionPath
 az
 [Aa]z[Cc]opy\
-[Ww]in[Gg]et

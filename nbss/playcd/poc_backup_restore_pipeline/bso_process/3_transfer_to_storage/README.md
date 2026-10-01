@@ -8,7 +8,7 @@ The upload script signs in to Azure CLI with your Microsoft Entra account, then 
 
 - **Azure CLI** — Install from <https://aka.ms/installazurecliwindows>
 
-or install both tools by running this script which uses winget to add the tools to your environment:
+or install both tools by running this script which uses `winget` to add the tools to your environment:
 
 ```powershell
 .\install_tools.bat
