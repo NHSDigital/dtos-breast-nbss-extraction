@@ -16,6 +16,10 @@ variable "environment" {
 variable "hub" {
   description = "Hub name (dev or prod)"
   type        = string
+  validation {
+    condition   = contains(["dev", "prod"], var.hub)
+    error_message = "Hub must be either 'dev' or 'prod'"
+  }
 }
 
 variable "hub_subscription_id"{
@@ -26,12 +30,6 @@ variable "hub_subscription_id"{
 variable "arm_subscription_id" {
   description = "Subscription ID of the application ARM subscription"
   type        = string
-}
-
-variable "enable_defender_for_storage" {
-  description = "Enable Microsoft Defender for Storage for the configured storage account and containers"
-  type        = bool
-  default     = false
 }
 
 # defender for storage variables
@@ -45,7 +43,7 @@ variable "override_subscription_settings_enabled" {
 variable "malware_scanning_on_upload_enabled" {
   description = "Enable malware scanning on upload for Microsoft Defender for Storage"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "malware_scanning_on_upload_cap_gb_per_month" {
@@ -64,4 +62,10 @@ variable "scan_is_enabled" {
   description = "Enable Microsoft Defender for Storage scanning"
   type        = bool
   default     = true
+}
+
+variable "storage_blob_private_dns_zone_name" {
+  description = "Private DNS zone name for storage blob private endpoints"
+  type        = string
+  default     = "privatelink.blob.core.windows.net"
 }

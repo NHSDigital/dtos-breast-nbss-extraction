@@ -12,7 +12,7 @@ module "shared_config" {
   application = var.app_short_name
 }
 
-locals{
-    resource_group_name = "rg-${var.app_short_name}-${var.env_config}-uks"
-    region              = "uksouth"
+locals {
+  resource_group_name = "rg-${var.app_short_name}-${var.env_config}-uks"
+  region              = "uksouth"
 }
