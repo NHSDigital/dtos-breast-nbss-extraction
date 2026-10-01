@@ -75,3 +75,23 @@ resource "azurerm_storage_container" "defender_containers" {
   storage_account_id    = azurerm_storage_account.defender_storage_account.id
   container_access_type = "private"
 }
+
+resource "azurerm_private_endpoint" "defender_storage_blob" {
+  provider            = azurerm.hub
+  name                = "${local.defender_upload_storage_account_name}-pep"
+  location            = data.azurerm_resource_group.hub_private_endpoint.location
+  resource_group_name = data.azurerm_resource_group.hub_private_endpoint.name
+  subnet_id           = data.azurerm_subnet.hub_private_endpoint.id
+
+  private_service_connection {
+    name                           = "${local.defender_upload_storage_account_name}-blob"
+    private_connection_resource_id = azurerm_storage_account.defender_storage_account.id
+    subresource_names              = ["blob"]
+    is_manual_connection           = false
+  }
+
+  private_dns_zone_group {
+    name                 = "${local.defender_upload_storage_account_name}-blob-dns"
+    private_dns_zone_ids = [data.azurerm_private_dns_zone.blob.id]
+  }
+}

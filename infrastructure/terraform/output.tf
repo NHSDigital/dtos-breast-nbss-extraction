@@ -11,3 +11,11 @@ locals {
 output "upload_container_urls" {
   value = local.upload_container_urls
 }
+
+output "defender_storage_account_id" {
+  value = azurerm_storage_account.defender_storage_account.id
+}
+
+output "defender_storage_private_endpoint_id" {
+  value = azurerm_private_endpoint.defender_storage_blob.id
+}

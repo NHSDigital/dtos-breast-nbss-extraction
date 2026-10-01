@@ -59,3 +59,9 @@ variable "scan_is_enabled" {
   type        = bool
   default     = true
 }
+
+variable "storage_blob_private_dns_zone_name" {
+  description = "Private DNS zone name for storage blob private endpoints"
+  type        = string
+  default     = "privatelink.blob.core.windows.net"
+}
