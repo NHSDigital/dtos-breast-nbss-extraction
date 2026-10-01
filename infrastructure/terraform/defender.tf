@@ -1,5 +1,5 @@
 locals {
-  defender_upload_storage_account_name =substr(replace("sa${var.app_short_name}${var.environment}defender", "/[^0-9a-z]/", ""), 0, 24)
+  defender_upload_storage_account_name = substr(replace("sa${var.app_short_name}${var.environment}defender", "/[^0-9a-z]/", ""), 0, 24)
 
   defender_containers = [
     "clean-scans",
@@ -7,10 +7,7 @@ locals {
   ]
 
   defender_target_storage_accounts = {
-    for storage_account_id in toset([
-      for container in local.upload_container_details : container.storage_account_id
-    ]) :
-    storage_account_id => storage_account_id
+    (local.upload_storage_account_name) = azurerm_storage_account.upload.id
   }
 }
 
