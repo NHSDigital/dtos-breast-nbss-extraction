@@ -7,8 +7,10 @@ locals {
   ]
 
   defender_target_storage_accounts = {
-    for container_key, container in local.upload_container_urls :
-    container_key => container.storage_account_id
+    for storage_account_id in toset([
+      for container in local.upload_container_urls : container.storage_account_id
+    ]) :
+    storage_account_id => storage_account_id
   }
 }
 
