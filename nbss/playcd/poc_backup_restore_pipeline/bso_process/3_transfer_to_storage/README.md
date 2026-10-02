@@ -1,23 +1,25 @@
 # 4. Transfer the zip file to Azure Storage
 
-You need to have Azure CLI installed and be logged in on your Microsoft Entra account to access the storage account.
+The upload script signs in to Azure CLI with your Microsoft Entra account, then uses those credentials with AzCopy to upload the zip file. The Entra account needs `add` privileges on the storage account for the transfer to be successful.
 
 ## Requirements
 
-- **AzCopy** — Install from <https://learn.microsoft.com/en-us/azure/storage/common/storage-use-AzCopy-v10>, or install and add it to the PATH by running:
-
-```powershell
-.\install_azcopy.bat
-```
+- **AzCopy** — Install from <https://learn.microsoft.com/en-us/azure/storage/common/storage-use-AzCopy-v10>
 
 - **Azure CLI** — Install from <https://aka.ms/installazurecliwindows>
 
-## Usage
+or install both tools by running this script which uses `winget` to add the tools to your environment:
 
-Run the below AzCopy command:
-
-```PowerShell
-azcopy copy "<local path to file to upload>" "https://<storageaccount name>.blob.core.windows.net/<storagecontainer name>" --put-md5
+```powershell
+.\install_tools.bat
 ```
 
-Once run, if successful, you should see the command return that it has done a write operation to the storage container.
+## Usage
+
+From this directory, run the script with the zip created in `bso_process`. Use the Microsoft Entra tenant ID associated with the storage account, not the subscription ID:
+
+```powershell
+.\run_azcopy.ps1 -LocalFilePath "..\<YYYYMMDD>-<bso_code>.zip" -TenantId "<tenant_id>" -StorageAccountName "<storage_account>" -ContainerName "<container_name>"
+```
+
+`-StorageAccountName` defaults to `sanbssedevupload` and `-ContainerName` defaults to `uploads` if omitted. Supply `-TenantId` explicitly: the script uses it for both `az login` and `azcopy login --login-type azcli`. The script stops if either login or the upload fails.
