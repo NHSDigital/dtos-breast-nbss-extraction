@@ -7,7 +7,7 @@ locals {
   ]
 
   defender_target_storage_accounts = {
-    (local.upload_storage_account_name) = azurerm_storage_account.upload.id
+    upload = azurerm_storage_account.upload
   }
 }
 
