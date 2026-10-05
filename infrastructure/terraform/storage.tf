@@ -20,9 +20,12 @@ locals {
 
     # {
     #   account_name        = "${local.base_storage_account_name}XXXX"
-    #   container           = "user-data"
-    #   security_group_name = "screening_nbsse_dev"
-    #   containers          = null
+    #   containers           = [
+    #     {
+    #       container_name      = "user-data"
+    #       security_group_name = "screening_nbsse_dev"
+    #     }
+    #   ]
     # },
   ]
 
@@ -34,7 +37,9 @@ locals {
   upload_accounts = [
     for account in local.temp_upload_accounts : {
       account_name = account.account_name
-      containers = can(account.containers) ? account.containers : [
+
+      # We want to ensure that 'containers' is never null
+      containers = can(account.containers) && account.containers != null ? account.containers : [
         {
           container_name      = try(account.container, "user-data")
           security_group_name = try(account.security_group_name, "screening_nbsse_dev")
