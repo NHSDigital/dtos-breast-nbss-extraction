@@ -14,7 +14,7 @@ terraform {
     }
   }
   backend "azurerm" {
-    container_name       = "terraform-state"
+    container_name = "terraform-state"
   }
 }
 

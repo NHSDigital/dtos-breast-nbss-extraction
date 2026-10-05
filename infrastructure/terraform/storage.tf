@@ -1,28 +1,73 @@
 locals {
-  upload_storage_account_name = substr(replace("sa${var.app_short_name}${var.environment}upload", "/[^0-9a-z]/", ""), 0, 24)
+  base_storage_account_name = substr(replace("sa${var.app_short_name}${var.environment}", "/[^0-9a-z]/", ""), 0, 24)
 
-  # Format: "landing_<bso-name>_<bso_code>:<entra-security-group-display-name>"
-  bso_containers = [
-    # this is a default container
-    "uploads:screening_nbsse_dev",
+  # populate this array if you want one account per trust
+  upload_accounts = (
+    var.storage_layout == "shared"
+    ? [
+      {
+        account_name = "${local.base_storage_account_name}uploads",
+        containers = [
+          {
+            container_name      = "uploads"
+            security_group_name = "screening_nbsse_dev"
+          }
+        ]
+      }
+    ]
+    :
+    [
+      {
+        account_name = "${local.base_storage_account_name}LCTlondon",
+      },
+      {
+        account_name = "${local.base_storage_account_name}LCTparis",
+      },
+      {
+        account_name = "${local.base_storage_account_name}LCTberlin",
+      }
+    ]
+  )
 
-    # these are the PR-designated containers. Only add them here when approved by the security team
-  ]
+  upload_accounts_map = {
+    for account in local.upload_accounts :
+    account.account_name => account
+  }
 
-  bso_container_map = {
-    for item in local.bso_containers :
-    trimspace(split(":", item)[0]) => {
-      container_name       = trimspace(split(":", item)[0])
-      security_group_name  = trimspace(split(":", item)[1])
-    }
+  upload_containers = {
+    for item in flatten([
+      for account in local.upload_accounts :
+      var.storage_layout == "shared" && can(account.containers)
+      ? [
+        for container in account.containers : {
+          key = "${account.account_name}-${container.container_name}"
+          value = {
+            account_name        = account.account_name
+            container_name      = container.container_name
+            security_group_name = container.security_group_name
+          }
+        }
+      ]
+      : [
+        {
+          key = "${account.account_name}-${try(account.container, "public_data")}"
+          value = {
+            account_name        = account.account_name
+            container_name      = try(account.container, "public_data")
+            security_group_name = try(account.security_group_name, "screening_nbsse_dev")
+          }
+        }
+      ]
+    ]) :
+    item.key => item.value
   }
 }
 
-resource "azurerm_storage_account" "upload" {
-  name                = local.upload_storage_account_name
-  resource_group_name = azurerm_resource_group.deploy_resource_group.name
-  location            = azurerm_resource_group.deploy_resource_group.location
-
+resource "azurerm_storage_account" "upload_accounts" {
+  for_each                 = local.upload_accounts_map
+  name                     = each.value.account_name
+  resource_group_name      = azurerm_resource_group.deploy_resource_group.name
+  location                 = azurerm_resource_group.deploy_resource_group.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
   account_kind             = "StorageV2"
@@ -41,12 +86,12 @@ resource "azurerm_storage_account" "upload" {
   public_network_access_enabled = true
 
   # The intention for the storage account is to provide Shared Key access and also Entra ID authentication.
-  shared_access_key_enabled     = true
+  shared_access_key_enabled = true
 }
 
-resource "azurerm_storage_container" "bso" {
-  for_each              = local.bso_container_map
+resource "azurerm_storage_container" "upload_containers" {
+  for_each              = local.upload_containers
   name                  = each.value.container_name
-  storage_account_id    = azurerm_storage_account.upload.id
+  storage_account_id    = azurerm_storage_account.upload_accounts[each.value.account_name].id
   container_access_type = "private"
 }
