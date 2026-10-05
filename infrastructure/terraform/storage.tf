@@ -1,38 +1,45 @@
 locals {
   base_storage_account_name = substr(replace("sa${var.app_short_name}${var.environment}", "/[^0-9a-z]/", ""), 0, 24)
 
-  # populate this array if you want one account per trust
-  upload_accounts = (
-    var.storage_layout == "shared"
-    ? [
-      {
-        account_name = "${local.base_storage_account_name}uploads",
-        containers = [
-          {
-            container_name      = "uploads"
-            security_group_name = "screening_nbsse_dev"
-          }
-        ]
-      }
-    ]
-    :
-    [
-      {
-        account_name = "${local.base_storage_account_name}LCTlondon",
-      },
-      {
-        account_name = "${local.base_storage_account_name}LCTparis",
-      },
-      {
-        account_name = "${local.base_storage_account_name}LCTberlin",
-      }
-    ]
+  shared_upload_accounts = [
+    {
+      account_name = "${local.base_storage_account_name}uploads"
+      containers = [
+        {
+          container_name      = "user-uploads"
+          security_group_name = "screening_nbsse_dev"
+        }
+      ]
+      container           = null
+      security_group_name = null
+    }
+  ]
+
+  # If using per-trust upload accounts, follow this structure. Also please ensure
+  # that the shared_upload_accounts structure is the same as this one if you ever
+  # need to modify either structure.
+  per_trust_upload_accounts = [
+
+    # {
+    #   account_name        = "${local.base_storage_account_name}XXXX"
+    #   container           = "user-data"
+    #   security_group_name = "screening_nbsse_dev"
+    #   containers          = null
+    # },
+  ]
+
+  upload_accounts_map = merge(
+    {
+      for account in local.shared_upload_accounts :
+      account.account_name => account if var.storage_layout == "shared"
+    },
+    {
+      for account in local.per_trust_upload_accounts :
+      account.account_name => account if var.storage_layout != "shared"
+    }
   )
 
-  upload_accounts_map = {
-    for account in local.upload_accounts :
-    account.account_name => account
-  }
+  upload_accounts = values(local.upload_accounts_map)
 
   upload_containers = {
     for item in flatten([
@@ -43,17 +50,17 @@ locals {
           key = "${account.account_name}-${container.container_name}"
           value = {
             account_name        = account.account_name
-            container_name      = container.container_name
-            security_group_name = container.security_group_name
+            container_name      = try(container.container_name, "user-data")
+            security_group_name = try(container.security_group_name, "screening_nbsse_dev")
           }
         }
       ]
       : [
         {
-          key = "${account.account_name}-${try(account.container, "public_data")}"
+          key = "${account.account_name}-${try(account.container, "user-data")}"
           value = {
             account_name        = account.account_name
-            container_name      = try(account.container, "public_data")
+            container_name      = try(account.container, "user-data")
             security_group_name = try(account.security_group_name, "screening_nbsse_dev")
           }
         }
