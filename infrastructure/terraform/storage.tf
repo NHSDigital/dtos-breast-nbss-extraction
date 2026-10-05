@@ -10,8 +10,6 @@ locals {
           security_group_name = "screening_nbsse_dev"
         }
       ]
-      container           = null
-      security_group_name = null
     }
   ]
 
@@ -28,40 +26,37 @@ locals {
     # },
   ]
 
-  upload_accounts_map = merge(
-    {
-      for account in local.shared_upload_accounts :
-      account.account_name => account if var.storage_layout == "shared"
-    },
-    {
-      for account in local.per_trust_upload_accounts :
-      account.account_name => account if var.storage_layout != "shared"
-    }
-  )
+  temp_upload_accounts = var.storage_layout == "shared" ? local.shared_upload_accounts : local.per_trust_upload_accounts
 
-  upload_accounts = values(local.upload_accounts_map)
+  # Extract all accounts into a single structure
+  # account_name + containers[]
+  #where each container has container_name + security_group_name.
+  upload_accounts = [
+    for account in local.temp_upload_accounts : {
+      account_name = account.account_name
+      containers = can(account.containers) ? account.containers : [
+        {
+          container_name      = try(account.container, "user-data")
+          security_group_name = try(account.security_group_name, "screening_nbsse_dev")
+        }
+      ]
+    }
+  ]
+
+  upload_accounts_map = {
+    for account in local.upload_accounts :
+    account.account_name => account
+  }
 
   upload_containers = {
     for item in flatten([
-      for account in local.upload_accounts :
-      var.storage_layout == "shared" && can(account.containers)
-      ? [
+      for account in local.upload_accounts : [
         for container in account.containers : {
-          key = "${account.account_name}-${container.container_name}"
+          key = "${account.account_name}-${try(container.container_name, "user-data")}"
           value = {
             account_name        = account.account_name
             container_name      = try(container.container_name, "user-data")
             security_group_name = try(container.security_group_name, "screening_nbsse_dev")
-          }
-        }
-      ]
-      : [
-        {
-          key = "${account.account_name}-${try(account.container, "user-data")}"
-          value = {
-            account_name        = account.account_name
-            container_name      = try(account.container, "user-data")
-            security_group_name = try(account.security_group_name, "screening_nbsse_dev")
           }
         }
       ]
