@@ -26,7 +26,7 @@ data "azuread_group" "bso_security_group" {
 
 resource "azurerm_role_assignment" "bso_container_upload_only" {
   for_each           = local.upload_containers
-  scope              = azurerm_storage_container.upload_containers[each.key].id
+  scope              = azurerm_storage_container.upload_containers[each.key].resource_manager_id
   role_definition_id = azurerm_role_definition.blob_upload_only.role_definition_resource_id
   principal_id       = data.azuread_group.bso_security_group[each.key].object_id
 }

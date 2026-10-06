@@ -3,10 +3,10 @@ locals {
 
   shared_upload_accounts = [
     {
-      account_name = "${local.base_storage_account_name}uploads"
+      account_name = "${local.base_storage_account_name}upload"
       containers = [
         {
-          container_name      = "user-uploads"
+          container_name      = "uploads"
           security_group_name = "screening_nbsse_dev"
         }
       ]
@@ -46,6 +46,8 @@ locals {
         }
       ]
     }
+
+
   ]
 
   upload_accounts_map = {
@@ -94,6 +96,15 @@ resource "azurerm_storage_account" "upload_accounts" {
 
   # The intention for the storage account is to provide Shared Key access and also Entra ID authentication.
   shared_access_key_enabled = true
+
+  # We need to ensure that account names remain within the length limit
+  # required by Azure. If the name exceeds, then we want to catch it early and provide a clear error message.
+  lifecycle {
+    precondition {
+      condition     = can(regex("^[a-z0-9]{3,24}$", each.value.account_name))
+      error_message = "Account name must be 3-24 characters long and contain only lowercase letters and numbers."
+    }
+  }
 }
 
 resource "azurerm_storage_container" "upload_containers" {
