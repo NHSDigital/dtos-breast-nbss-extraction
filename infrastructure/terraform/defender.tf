@@ -5,38 +5,34 @@ locals {
     "clean-scans",
     "quarantine-scans"
   ]
-
-  defender_target_storage_accounts = {
-    upload = azurerm_storage_account.upload
-  }
 }
 
-# Configure Defender for all trust upload storage accounts
-# Use "update" to modify existing Defender for Storage settings rather than creating new ones
+# Configure Defender for all upload storage accounts in the selected layout.
+# Use "update" instead of creating new Defender resources when a storage account already exists.
 resource "azapi_update_resource" "defender_settings" {
-  for_each  = local.defender_target_storage_accounts
+  for_each = local.upload_accounts_map
 
-  type      = "Microsoft.Security/defenderForStorageSettings@2026-01-01-preview"
-  resource_id = "${each.value}/providers/Microsoft.Security/defenderForStorageSettings/current"
+  type        = "Microsoft.Security/defenderForStorageSettings@2026-01-01-preview"
+  resource_id = "${azurerm_storage_account.upload_accounts[each.key].id}/providers/Microsoft.Security/defenderForStorageSettings/current"
 
   body = {
     properties = {
-        isEnabled = var.scan_is_enabled
+      isEnabled = var.scan_is_enabled
 
-        # only provide if the storage accounts absolutely must have their own settings
-        overrideSubscriptionLevelSettings = var.override_subscription_settings_enabled
+      # Only use account-level override when storage accounts must diverge from the subscription baseline.
+      overrideSubscriptionLevelSettings = var.override_subscription_settings_enabled
 
-        sensitiveDataDiscovery = {
-          isEnabled = var.sensitive_data_discovery_enabled && var.scan_is_enabled
+      sensitiveDataDiscovery = {
+        isEnabled = var.sensitive_data_discovery_enabled && var.scan_is_enabled
+      }
+
+      malwareScanning = {
+        blobScanResultsOptions = "BlobIndexTags"
+        onUpload = {
+          isEnabled     = var.malware_scanning_on_upload_enabled && var.scan_is_enabled
+          capGBPerMonth = var.malware_scanning_on_upload_cap_gb_per_month
         }
-
-        malwareScanning = {
-          blobScanResultsOptions = "BlobIndexTags"
-          onUpload = {
-            isEnabled     = var.malware_scanning_on_upload_enabled && var.scan_is_enabled
-            capGBPerMonth = var.malware_scanning_on_upload_cap_gb_per_month
-          }
-        }
+      }
     }
   }
 }
@@ -65,7 +61,7 @@ resource "azurerm_storage_account" "defender_storage_account" {
   public_network_access_enabled = false
 
   # The intention for the storage account is to provide Shared Key access and also Entra ID authentication.
-  shared_access_key_enabled     = true
+  shared_access_key_enabled = true
 }
 
 resource "azurerm_storage_container" "defender_containers" {

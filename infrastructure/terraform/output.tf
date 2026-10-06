@@ -1,6 +1,6 @@
 locals {
   upload_container_details = {
-    for container_key, container in azurerm_storage_container.bso :
+    for container_key, container in azurerm_storage_container.upload_containers :
     container_key => {
       endpoint           = container.id
       storage_account_id = container.storage_account_id

@@ -3,7 +3,7 @@ variable "app_short_name" {
   type        = string
 }
 
-variable "env_config"{
+variable "env_config" {
   description = "Environment configuration file name"
   type        = string
 }
@@ -17,12 +17,12 @@ variable "hub" {
   description = "Hub name (dev or prod)"
   type        = string
   validation {
-    condition   = contains(["dev", "prod"], var.hub)
+    condition     = contains(["dev", "prod"], var.hub)
     error_message = "Hub must be either 'dev' or 'prod'"
   }
 }
 
-variable "hub_subscription_id"{
+variable "hub_subscription_id" {
   description = "Subscription ID of the hub"
   type        = string
 }
@@ -30,6 +30,18 @@ variable "hub_subscription_id"{
 variable "arm_subscription_id" {
   description = "Subscription ID of the application ARM subscription"
   type        = string
+}
+
+# general settings for customer accounts
+
+variable "storage_layout" {
+  description = "Sets the type of storage account and container layout used for uploads"
+  type        = string
+  default     = "per-trust"
+  validation {
+    condition     = contains(["per-trust", "shared"], var.storage_layout)
+    error_message = "Storage layout must be either 'per-trust' or 'shared'"
+  }
 }
 
 # defender for storage variables

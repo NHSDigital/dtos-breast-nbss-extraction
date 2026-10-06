@@ -1,28 +1,82 @@
 locals {
-  upload_storage_account_name = substr(replace("sa${var.app_short_name}${var.environment}upload", "/[^0-9a-z]/", ""), 0, 24)
+  base_storage_account_name = substr(replace("sa${var.app_short_name}${var.environment}", "/[^0-9a-z]/", ""), 0, 24)
 
-  # Format: "landing_<bso-name>_<bso_code>:<entra-security-group-display-name>"
-  bso_containers = [
-    # this is a default container
-    "uploads:screening_nbsse_dev",
-
-    # these are the PR-designated containers. Only add them here when approved by the security team
+  shared_upload_accounts = [
+    {
+      account_name = "${local.base_storage_account_name}upload"
+      containers = [
+        {
+          container_name      = "uploads"
+          security_group_name = "screening_nbsse_dev"
+        }
+      ]
+    }
   ]
 
-  bso_container_map = {
-    for item in local.bso_containers :
-    trimspace(split(":", item)[0]) => {
-      container_name       = trimspace(split(":", item)[0])
-      security_group_name  = trimspace(split(":", item)[1])
+  # If using per-trust upload accounts, follow this structure. Also please ensure
+  # that the shared_upload_accounts structure is the same as this one if you ever
+  # need to modify either structure.
+  per_trust_upload_accounts = [
+
+    # {
+    #   account_name        = "${local.base_storage_account_name}XXXX"
+    #   containers           = [
+    #     {
+    #       container_name      = "user-data"
+    #       security_group_name = "screening_nbsse_dev"
+    #     }
+    #   ]
+    # },
+  ]
+
+  temp_upload_accounts = var.storage_layout == "shared" ? local.shared_upload_accounts : local.per_trust_upload_accounts
+
+  # Extract all accounts into a single structure
+  # account_name + containers[]
+  #where each container has container_name + security_group_name.
+  upload_accounts = [
+    for account in local.temp_upload_accounts : {
+      account_name = account.account_name
+
+      # We want to ensure that 'containers' is never null
+      containers = can(account.containers) && account.containers != null ? account.containers : [
+        {
+          container_name      = try(account.container, "user-data")
+          security_group_name = try(account.security_group_name, "screening_nbsse_dev")
+        }
+      ]
     }
+
+
+  ]
+
+  upload_accounts_map = {
+    for account in local.upload_accounts :
+    account.account_name => account
+  }
+
+  upload_containers = {
+    for item in flatten([
+      for account in local.upload_accounts : [
+        for container in account.containers : {
+          key = "${account.account_name}-${try(container.container_name, "user-data")}"
+          value = {
+            account_name        = account.account_name
+            container_name      = try(container.container_name, "user-data")
+            security_group_name = try(container.security_group_name, "screening_nbsse_dev")
+          }
+        }
+      ]
+    ]) :
+    item.key => item.value
   }
 }
 
-resource "azurerm_storage_account" "upload" {
-  name                = local.upload_storage_account_name
-  resource_group_name = azurerm_resource_group.deploy_resource_group.name
-  location            = azurerm_resource_group.deploy_resource_group.location
-
+resource "azurerm_storage_account" "upload_accounts" {
+  for_each                 = local.upload_accounts_map
+  name                     = each.value.account_name
+  resource_group_name      = azurerm_resource_group.deploy_resource_group.name
+  location                 = azurerm_resource_group.deploy_resource_group.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
   account_kind             = "StorageV2"
@@ -41,12 +95,21 @@ resource "azurerm_storage_account" "upload" {
   public_network_access_enabled = true
 
   # The intention for the storage account is to provide Shared Key access and also Entra ID authentication.
-  shared_access_key_enabled     = true
+  shared_access_key_enabled = true
+
+  # We need to ensure that account names remain within the length limit
+  # required by Azure. If the name exceeds, then we want to catch it early and provide a clear error message.
+  lifecycle {
+    precondition {
+      condition     = can(regex("^[a-z0-9]{3,24}$", each.value.account_name))
+      error_message = "Account name must be 3-24 characters long and contain only lowercase letters and numbers."
+    }
+  }
 }
 
-resource "azurerm_storage_container" "bso" {
-  for_each              = local.bso_container_map
+resource "azurerm_storage_container" "upload_containers" {
+  for_each              = local.upload_containers
   name                  = each.value.container_name
-  storage_account_id    = azurerm_storage_account.upload.id
+  storage_account_id    = azurerm_storage_account.upload_accounts[each.value.account_name].id
   container_access_type = "private"
 }
