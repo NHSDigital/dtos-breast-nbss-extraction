@@ -1,12 +1,12 @@
 locals {
-  base_storage_account_name = substr(replace("sa${var.app_short_name}${var.environment}", "/[^0-9a-z]/", ""), 0, 24)
+  # we dont want accounts to start with numbers
+  base_storage_account_name = regexreplace("sa${var.app_short_name}${var.environment}", "[^0-9a-z]", "")
 
   upload_account_rows = csvdecode(data.local_file.upload_accounts.content)
 
   per_trust_upload_accounts = [
     for row in local.upload_account_rows : {
       account_name = "${local.base_storage_account_name}${trimspace(row.suffix)}"
-      ip           = trimspace(row.ipAddress)
       containers = [
         {
           container_name      = trimspace(row.container_name) != "" ? trimspace(row.container_name) : "user-data"
@@ -19,9 +19,6 @@ locals {
   upload_accounts = [
     for account in local.per_trust_upload_accounts : {
       account_name = account.account_name
-
-      # ip whitelisting if supplied
-      ip = can(account.ip) && account.ip != null && account.ip != "null" ? account.ip : ""
 
       # We want to ensure that 'containers' is never null
       containers = can(account.containers) && account.containers != null ? account.containers : [
