@@ -1,42 +1,27 @@
 locals {
   base_storage_account_name = substr(replace("sa${var.app_short_name}${var.environment}", "/[^0-9a-z]/", ""), 0, 24)
 
-  shared_upload_accounts = [
-    {
-      account_name = "${local.base_storage_account_name}upload"
+  upload_account_rows = csvdecode(data.local_file.upload_accounts.content)
+
+  per_trust_upload_accounts = [
+    for row in local.upload_account_rows : {
+      account_name = "${local.base_storage_account_name}${trimspace(row.suffix)}"
+      ip           = trimspace(row.ipAddress)
       containers = [
         {
-          container_name      = "uploads"
-          security_group_name = "screening_nbsse_dev"
+          container_name      = trimspace(row.container_name) != "" ? trimspace(row.container_name) : "user-data"
+          security_group_name = trimspace(row.security_group_name) != "" ? trimspace(row.security_group_name) : "screening_nbsse_dev"
         }
       ]
     }
   ]
 
-  # If using per-trust upload accounts, follow this structure. Also please ensure
-  # that the shared_upload_accounts structure is the same as this one if you ever
-  # need to modify either structure.
-  per_trust_upload_accounts = [
-
-    # {
-    #   account_name        = "${local.base_storage_account_name}XXXX"
-    #   containers           = [
-    #     {
-    #       container_name      = "user-data"
-    #       security_group_name = "screening_nbsse_dev"
-    #     }
-    #   ]
-    # },
-  ]
-
-  temp_upload_accounts = var.storage_layout == "shared" ? local.shared_upload_accounts : local.per_trust_upload_accounts
-
-  # Extract all accounts into a single structure
-  # account_name + containers[]
-  #where each container has container_name + security_group_name.
   upload_accounts = [
-    for account in local.temp_upload_accounts : {
+    for account in local.per_trust_upload_accounts : {
       account_name = account.account_name
+
+      # ip whitelisting if supplied
+      ip = can(account.ip) && account.ip != null && account.ip != "null" ? account.ip : ""
 
       # We want to ensure that 'containers' is never null
       containers = can(account.containers) && account.containers != null ? account.containers : [
@@ -46,8 +31,6 @@ locals {
         }
       ]
     }
-
-
   ]
 
   upload_accounts_map = {
