@@ -1,6 +1,6 @@
 locals {
   # we dont want accounts to start with numbers
-  base_storage_account_name = regexreplace("sa${var.app_short_name}${var.environment}", "[^0-9a-z]", "")
+  base_storage_account_name = replace("sa${var.app_short_name}${var.environment}", "/[^0-9a-z]/", "")
 
   upload_account_rows = csvdecode(data.local_file.upload_accounts.content)
 
@@ -16,28 +16,14 @@ locals {
     }
   ]
 
-  upload_accounts = [
-    for account in local.per_trust_upload_accounts : {
-      account_name = account.account_name
-
-      # We want to ensure that 'containers' is never null
-      containers = can(account.containers) && account.containers != null ? account.containers : [
-        {
-          container_name      = try(account.container, "user-data")
-          security_group_name = try(account.security_group_name, "screening_nbsse_dev")
-        }
-      ]
-    }
-  ]
-
   upload_accounts_map = {
-    for account in local.upload_accounts :
+    for account in local.per_trust_upload_accounts :
     account.account_name => account
   }
 
   upload_containers = {
     for item in flatten([
-      for account in local.upload_accounts : [
+      for account in local.per_trust_upload_accounts : [
         for container in account.containers : {
           key = "${account.account_name}-${try(container.container_name, "user-data")}"
           value = {
