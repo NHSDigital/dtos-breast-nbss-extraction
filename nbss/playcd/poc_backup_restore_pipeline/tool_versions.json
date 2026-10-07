@@ -1,0 +1,12 @@
+{
+    "AzureCli": {
+        "DisplayName": "Azure CLI",
+        "WingetId": "Microsoft.AzureCLI",
+        "Version": "2.90.0"
+    },
+    "AzCopy": {
+        "DisplayName": "AzCopy",
+        "WingetId": "Microsoft.Azure.AZCopy.10",
+        "Version": "10.32.8"
+    }
+}

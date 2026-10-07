@@ -3,10 +3,10 @@
 .SYNOPSIS
     Ensures winget, Azure CLI and AzCopy are installed, pinned to known-good versions.
 .PARAMETER ToolVersionsFile
-    Path to the .psd1 file holding the pinned tool versions.
+    Path to the JSON file holding the pinned tool versions.
 #>
 param(
-    [string]$ToolVersionsFile = (Join-Path $PSScriptRoot '..\..\tool_versions.psd1')
+    [string]$ToolVersionsFile = (Join-Path $PSScriptRoot '..\..\tool_versions.json')
 )
 
 $ErrorActionPreference = 'Stop'
@@ -14,7 +14,7 @@ $ErrorActionPreference = 'Stop'
 if (-not (Test-Path -LiteralPath $ToolVersionsFile)) {
     throw "Tool versions file not found: $ToolVersionsFile"
 }
-$ToolVersions = Import-PowerShellDataFile -LiteralPath $ToolVersionsFile
+$ToolVersions = Get-Content -LiteralPath $ToolVersionsFile -Raw | ConvertFrom-Json
 
 function Test-CommandExists {
     param([Parameter(Mandatory)][string]$Name)
@@ -83,7 +83,7 @@ else {
 
 # 2. Ensure pinned tools are installed.
 foreach ($toolName in 'AzureCli', 'AzCopy') {
-    $tool = $ToolVersions[$toolName]
+    $tool = $ToolVersions.$toolName
     if (-not $tool) {
         throw "'$toolName' is missing from $ToolVersionsFile"
     }
