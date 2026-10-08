@@ -1,63 +1,29 @@
 locals {
-  base_storage_account_name = substr(replace("sa${var.app_short_name}${var.environment}", "/[^0-9a-z]/", ""), 0, 24)
+  # we dont want accounts to start with numbers
+  base_storage_account_name = replace("sa${var.app_short_name}${var.environment}", "/[^0-9a-z]/", "")
 
-  shared_upload_accounts = [
-    {
-      account_name = "${local.base_storage_account_name}upload"
+  upload_account_rows = csvdecode(data.local_file.upload_accounts.content)
+
+  per_trust_upload_accounts = [
+    for row in local.upload_account_rows : {
+      account_name = "${local.base_storage_account_name}${trimspace(row.suffix)}"
       containers = [
         {
-          container_name      = "uploads"
-          security_group_name = "screening_nbsse_dev"
+          container_name      = trimspace(row.container_name) != "" ? trimspace(row.container_name) : "user-data"
+          security_group_name = trimspace(row.security_group_name) != "" ? trimspace(row.security_group_name) : "screening_nbsse_dev"
         }
       ]
     }
-  ]
-
-  # If using per-trust upload accounts, follow this structure. Also please ensure
-  # that the shared_upload_accounts structure is the same as this one if you ever
-  # need to modify either structure.
-  per_trust_upload_accounts = [
-
-    # {
-    #   account_name        = "${local.base_storage_account_name}XXXX"
-    #   containers           = [
-    #     {
-    #       container_name      = "user-data"
-    #       security_group_name = "screening_nbsse_dev"
-    #     }
-    #   ]
-    # },
-  ]
-
-  temp_upload_accounts = var.storage_layout == "shared" ? local.shared_upload_accounts : local.per_trust_upload_accounts
-
-  # Extract all accounts into a single structure
-  # account_name + containers[]
-  #where each container has container_name + security_group_name.
-  upload_accounts = [
-    for account in local.temp_upload_accounts : {
-      account_name = account.account_name
-
-      # We want to ensure that 'containers' is never null
-      containers = can(account.containers) && account.containers != null ? account.containers : [
-        {
-          container_name      = try(account.container, "user-data")
-          security_group_name = try(account.security_group_name, "screening_nbsse_dev")
-        }
-      ]
-    }
-
-
   ]
 
   upload_accounts_map = {
-    for account in local.upload_accounts :
+    for account in local.per_trust_upload_accounts :
     account.account_name => account
   }
 
   upload_containers = {
     for item in flatten([
-      for account in local.upload_accounts : [
+      for account in local.per_trust_upload_accounts : [
         for container in account.containers : {
           key = "${account.account_name}-${try(container.container_name, "user-data")}"
           value = {
