@@ -47,6 +47,7 @@ function Install-AzureCli {
     if ($proc.ExitCode -notin 0, 3010) {
         throw "Azure CLI MSI install failed with exit code $($proc.ExitCode)."
     }
+    Remove-Item -LiteralPath $msi -Force -ErrorAction SilentlyContinue
 }
 
 function Install-AzCopy {
@@ -69,6 +70,7 @@ function Install-AzCopy {
     New-Item -ItemType Directory -Path $AzCopyInstallDir -Force | Out-Null
     Copy-Item -LiteralPath $exe.FullName -Destination $AzCopyInstallDir -Force
     Add-ToMachinePath -Directory $AzCopyInstallDir
+    Remove-Item -LiteralPath $zip, $extractDir -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 if (Get-Command -Name 'az' -ErrorAction SilentlyContinue) {
