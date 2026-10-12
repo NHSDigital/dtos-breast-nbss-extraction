@@ -32,18 +32,6 @@ variable "arm_subscription_id" {
   type        = string
 }
 
-# general settings for customer accounts
-
-variable "storage_layout" {
-  description = "Sets the type of storage account and container layout used for uploads"
-  type        = string
-  default     = "per-trust"
-  validation {
-    condition     = contains(["per-trust", "shared"], var.storage_layout)
-    error_message = "Storage layout must be either 'per-trust' or 'shared'"
-  }
-}
-
 # defender for storage variables
 
 variable "override_subscription_settings_enabled" {
