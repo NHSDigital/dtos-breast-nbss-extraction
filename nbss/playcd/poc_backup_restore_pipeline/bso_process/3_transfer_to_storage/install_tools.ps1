@@ -1,93 +1,99 @@
-#Requires -Version 5.1
-<#
-.SYNOPSIS
-    Ensures winget, Azure CLI and AzCopy are installed, pinned to known-good versions.
-.PARAMETER ToolVersionsFile
-    Path to the JSON file holding the pinned tool versions.
-#>
 param(
-    [string]$ToolVersionsFile = (Join-Path $PSScriptRoot '..\..\tool_versions.json')
+    [string]$ToolVersionsFile = (Join-Path $PSScriptRoot '..\..\tool_versions.json'),
+    [string]$AzCopyInstallDir = (Join-Path $env:ProgramFiles 'AzCopy')
 )
 
 $ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
+[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
 if (-not (Test-Path -LiteralPath $ToolVersionsFile)) {
     throw "Tool versions file not found: $ToolVersionsFile"
 }
 $ToolVersions = Get-Content -LiteralPath $ToolVersionsFile -Raw | ConvertFrom-Json
 
-function Test-CommandExists {
-    param([Parameter(Mandatory)][string]$Name)
-    return [bool](Get-Command -Name $Name -ErrorAction SilentlyContinue)
+function Assert-MicrosoftSignature {
+    param([Parameter(Mandatory)][string]$Path)
+
+    $sig = Get-AuthenticodeSignature -LiteralPath $Path
+    $subject = if ($sig.SignerCertificate) { $sig.SignerCertificate.Subject } else { '<none>' }
+    if ($sig.Status -ne 'Valid' -or $subject -notmatch '(^|,\s*)O=Microsoft Corporation(,|$)') {
+        throw "Code signature check failed for $Path. Status: $($sig.Status). Signer: $subject"
+    }
+    Write-Host "Verified Microsoft signature on $(Split-Path -Leaf $Path)."
 }
 
-function Install-Winget {
-    Write-Host 'winget not found. Attempting to install the App Installer (winget)...'
+function Add-ToMachinePath {
+    param([Parameter(Mandatory)][string]$Directory)
 
-    # winget ships with the Microsoft.DesktopAppInstaller package on Windows 10/11.
-    try {
-        $progressPreference = 'SilentlyContinue'
-        $tempInstaller = Join-Path $env:TEMP 'Microsoft.DesktopAppInstaller.msixbundle'
-        $downloadUrl = 'https://aka.ms/getwinget'
-
-        Write-Host "Downloading App Installer from $downloadUrl ..."
-        Invoke-WebRequest -Uri $downloadUrl -OutFile $tempInstaller -UseBasicParsing
-
-        Write-Host 'Registering App Installer package...'
-        Add-AppxPackage -Path $tempInstaller
-
-        Remove-Item -Path $tempInstaller -Force -ErrorAction SilentlyContinue
+    $path = [Environment]::GetEnvironmentVariable('Path', 'Machine')
+    if (($path -split ';') -notcontains $Directory) {
+        [Environment]::SetEnvironmentVariable('Path', "$path;$Directory", 'Machine')
     }
-    catch {
-        throw "Failed to install winget automatically. Install 'App Installer' from the Microsoft Store, then re-run this script. Details: $($_.Exception.Message)"
-    }
-
-    if (-not (Test-CommandExists -Name 'winget')) {
-        throw "winget is still not available after installation. Restart the shell (or the machine) and re-run this script."
-    }
-
-    Write-Host 'winget installed successfully.'
 }
 
-function Install-WingetPackage {
-    param(
-        [Parameter(Mandatory)][string]$DisplayName,
-        [Parameter(Mandatory)][string]$Id,
-        [Parameter(Mandatory)][string]$Version
-    )
+function Install-AzureCli {
+    param([Parameter(Mandatory)]$Tool)
 
-    $installed = winget list --exact --id $Id 2>$null | Select-String -SimpleMatch $Id
-    if ($installed) {
-        Write-Host "$DisplayName is already installed. Skipping."
-        return
+    $msi = Join-Path $env:TEMP 'azure-cli.msi'
+    Write-Host "Downloading $($Tool.DisplayName) from $($Tool.Url) ..."
+    Invoke-WebRequest -Uri $Tool.Url -OutFile $msi -UseBasicParsing
+    Assert-MicrosoftSignature -Path $msi
+
+    Write-Host "Installing $($Tool.DisplayName) ..."
+    $proc = Start-Process -FilePath 'msiexec.exe' -Wait -PassThru `
+        -ArgumentList @('/i', "`"$msi`"", '/qn', '/norestart')
+    # 3010 = success, reboot required.
+    if ($proc.ExitCode -notin 0, 3010) {
+        throw "Azure CLI MSI install failed with exit code $($proc.ExitCode)."
     }
-
-    Write-Host "Installing $DisplayName ($Id) version $Version ..."
-    winget install --exact --id $Id --version $Version `
-        --accept-package-agreements --accept-source-agreements
-
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to install $DisplayName ($Id) version $Version. winget exit code: $LASTEXITCODE"
-    }
-
-    Write-Host "$DisplayName installed successfully."
+    Remove-Item -LiteralPath $msi -Force -ErrorAction SilentlyContinue
 }
 
-# 1. Ensure winget is available.
-if (-not (Test-CommandExists -Name 'winget')) {
-    Install-Winget
+function Install-AzCopy {
+    param([Parameter(Mandatory)]$Tool)
+
+    $zip = Join-Path $env:TEMP 'azcopy.zip'
+    $extractDir = Join-Path $env:TEMP 'azcopy'
+    Write-Host "Downloading $($Tool.DisplayName) from $($Tool.Url) ..."
+    Invoke-WebRequest -Uri $Tool.Url -OutFile $zip -UseBasicParsing
+
+    Expand-Archive -LiteralPath $zip -DestinationPath $extractDir -Force
+    $exe = Get-ChildItem -LiteralPath $extractDir -Recurse -Filter 'azcopy.exe' | Select-Object -First 1
+    if (-not $exe) {
+        throw 'azcopy.exe not found in the downloaded archive.'
+    }
+    # The zip itself is unsigned, so verify the executable inside it.
+    Assert-MicrosoftSignature -Path $exe.FullName
+
+    Write-Host "Installing $($Tool.DisplayName) to $AzCopyInstallDir ..."
+    New-Item -ItemType Directory -Path $AzCopyInstallDir -Force | Out-Null
+    Copy-Item -LiteralPath $exe.FullName -Destination $AzCopyInstallDir -Force
+    Add-ToMachinePath -Directory $AzCopyInstallDir
+    Remove-Item -LiteralPath $zip, $extractDir -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+if (Get-Command -Name 'az' -ErrorAction SilentlyContinue) {
+    Write-Host 'Azure CLI is already installed. Leaving it unchanged.'
 }
 else {
-    Write-Host 'winget is already installed.'
+    Install-AzureCli -Tool $ToolVersions.AzureCli
 }
 
-# 2. Ensure pinned tools are installed.
-foreach ($toolName in 'AzureCli', 'AzCopy') {
-    $tool = $ToolVersions.$toolName
-    if (-not $tool) {
-        throw "'$toolName' is missing from $ToolVersionsFile"
+if (Get-Command -Name 'azcopy' -ErrorAction SilentlyContinue) {
+    Write-Host 'AzCopy is already installed. Leaving it unchanged.'
+}
+else {
+    Install-AzCopy -Tool $ToolVersions.AzCopy
+}
+
+# Reload PATH so tools installed above are visible in this session.
+$env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' +
+            [Environment]::GetEnvironmentVariable('Path', 'User')
+foreach ($cmd in 'az', 'azcopy') {
+    if (-not (Get-Command -Name $cmd -ErrorAction SilentlyContinue)) {
+        throw "'$cmd' is still not on PATH after installation."
     }
-    Install-WingetPackage -DisplayName $tool.DisplayName -Id $tool.WingetId -Version $tool.Version
 }
 
-Write-Host 'All tools are installed.'
+Write-Host 'All tools are installed. If run_azcopy.ps1 cannot find az or azcopy, open a new PowerShell window.'
