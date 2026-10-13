@@ -1,5 +1,9 @@
 terraform {
   required_providers {
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
+    }
     azurerm = {
       source  = "hashicorp/azurerm"
       version = "4.59.0"
@@ -14,7 +18,7 @@ terraform {
     }
   }
   backend "azurerm" {
-    container_name       = "terraform-state"
+    container_name = "terraform-state"
   }
 }
 

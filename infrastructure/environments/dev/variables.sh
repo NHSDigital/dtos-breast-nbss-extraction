@@ -4,3 +4,4 @@ AZURE_SUBSCRIPTION="Breast Screening - NBSS Extraction - Dev"
 HUB_SUBSCRIPTION="Digital Screening DToS - DevOps"
 ENABLE_SOFT_DELETE=false
 TERRAFORM_MODULES_REF=main
+HUB=dev

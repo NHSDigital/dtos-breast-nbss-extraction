@@ -16,6 +16,38 @@ Once the zip is in Azure Storage, continue with the
 
 Details of each step are set out in the linked READMEs.
 
+## Download the scripts
+
+In order to run this part of the process, BSOs must run the following command from
+PowerShell to copy the scripts onto the BSO machine:
+
+```powershell
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$base  = "https://raw.githubusercontent.com/NHSDigital/dtos-breast-nbss-extraction/main/nbss/playcd/poc_backup_restore_pipeline/bso_process"
+$dest  = Join-Path (Get-Location) "bso_process"
+$files = @(
+    "2_zip_backup_files/create_nbss_back_up.bat",
+    "2_zip_backup_files/create_nbss_back_up.ps1",
+    "3_transfer_to_storage/install_tools.bat",
+    "3_transfer_to_storage/install_tools.ps1",
+    "3_transfer_to_storage/run_azcopy.ps1"
+)
+foreach ($f in $files) {
+    $out = Join-Path $dest $f
+    New-Item -ItemType Directory -Force -Path (Split-Path $out) | Out-Null
+    Invoke-WebRequest -Uri "$base/$f" -OutFile $out -UseBasicParsing
+    Unblock-File -Path $out
+}
+Set-Location $dest
+```
+
+This creates a `bso_process` folder in the current directory with the same layout as
+this folder, so the step commands below work unchanged. The zip created in step 2 is
+written to this `bso_process` folder.
+
+- Run the command from a folder with enough free disk space for the backup zip (typically 2-3x the `CACHE.DAT` size).
+- `Unblock-File` removes the "downloaded from the internet" flag so that `run_azcopy.ps1` can run under the default execution policy.
+
 ## Prerequisites
 
 ### Azure resources
