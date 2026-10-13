@@ -1,0 +1,14 @@
+{
+    "AzureCli": {
+        "DisplayName": "Azure CLI",
+        "WingetId": "Microsoft.AzureCLI",
+        "Version": "2.90.0",
+        "Url": "https://azcliprod.blob.core.windows.net/msi/azure-cli-2.90.0-x64.msi"
+    },
+    "AzCopy": {
+        "DisplayName": "AzCopy",
+        "WingetId": "Microsoft.Azure.AZCopy.10",
+        "Version": "10.32.8",
+        "Url": "https://github.com/Azure/azure-storage-azcopy/releases/download/v10.32.8/azcopy_windows_amd64_10.32.8.zip"
+    }
+}
