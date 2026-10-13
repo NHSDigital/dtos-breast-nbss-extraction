@@ -3,7 +3,7 @@
 #
 # If 'container_name' is empty, it will default to "user-data".
 # If 'security_group_name' is empty, it will default to "screening_nbsse_dev".
-# The 'ipAddress' (or legacy 'ipAddresses') column can contain one or more ';' or ',' separated IP values.
+# The 'ipAddresses' column can contain one or more ';' separated IP values.
 # Invalid, blank, 'null', or blocked IP values are ignored.
 
 data "local_file" "upload_accounts" {
