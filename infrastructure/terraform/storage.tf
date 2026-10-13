@@ -2,26 +2,56 @@ locals {
   # we dont want accounts to start with numbers
   base_storage_account_name = replace("sa${var.app_short_name}${var.environment}", "/[^0-9a-z]/", "")
 
+  # Azure Storage network rules accept public IPv4 only. Block using explicit prefix lists. This is
+  # a most basic way to filter reserved IPs. More in-depth techniques exist, include using
+  # `cidrcontains` from other providers.
+  # Please see https://www.iana.org/assignments/iana-ipv4-special-registry for list of internet-wide reserved addresses.
+  disallowed_ips = [
+    "0.0.0.0",
+    "10.",
+    "100.64.0.",
+    "127.0.0.",
+    "169.254.",
+    "172.",
+    "192.0.",
+    "192.18.",
+    "192.168.",
+    "192.175.",
+    "224.0.0.",
+    "240.0.0.",
+    "255.255.255.255",
+
+    # Azure-specific
+    "168.63.129.16",
+  ]
+
   upload_account_rows = csvdecode(data.local_file.upload_accounts.content)
 
   per_trust_upload_accounts = [
     for row in local.upload_account_rows : {
       account_name = "${local.base_storage_account_name}${trimspace(row.suffix)}"
+
       ipAddresses = distinct([
         for ip in(
-          trimspace(try(row.ipAddresses, "")) != ""
-          ? split(",", trimspace(try(row.ipAddresses, "")))
+          trimspace(try(row.ipAddresses, try(row.ipAddress, ""))) != ""
+          ? split(";", replace(trimspace(try(row.ipAddresses, try(row.ipAddress, ""))), ",", ";"))
           : []
         ) :
         trimspace(ip)
 
-        # cidrhost(...32) = single-host IPv4
-        # cidrhost(...0) = entire IPv4 address space
+        # cidrhost(ip, 0) validates CIDR input and evaluates host index 0 for that range.
+        # cidrhost("${ip}/32", 0) validates plain IPv4 input as a single-host CIDR.
         if trimspace(ip) != "" && lower(trimspace(ip)) != "null" &&
         (
-          can(cidrhost(trimspace(ip), 0)) || can(cidrhost("${trimspace(ip)}/32", 0))
-        )
+          can(cidrhost(trimspace(ip), 0)) ||
+          can(cidrhost("${trimspace(ip)}/32", 0))
+        ) &&
+        alltrue([
+          for range in local.disallowed_ips :
+          startswith(trimspace(ip), range) == false || trimspace(ip) == range
+        ])
       ])
+
       containers = [
         {
           container_name      = trimspace(row.container_name) != "" ? trimspace(row.container_name) : "user-data"
