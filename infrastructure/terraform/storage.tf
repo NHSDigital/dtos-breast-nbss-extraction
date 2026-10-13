@@ -7,6 +7,21 @@ locals {
   per_trust_upload_accounts = [
     for row in local.upload_account_rows : {
       account_name = "${local.base_storage_account_name}${trimspace(row.suffix)}"
+      ipAddresses = distinct([
+        for ip in(
+          trimspace(try(row.ipAddresses, "")) != ""
+          ? split(",", trimspace(try(row.ipAddresses, "")))
+          : []
+        ) :
+        trimspace(ip)
+
+        # cidrhost(...32) = single-host IPv4
+        # cidrhost(...0) = entire IPv4 address space
+        if trimspace(ip) != "" && lower(trimspace(ip)) != "null" &&
+        (
+          can(cidrhost(trimspace(ip), 0)) || can(cidrhost("${trimspace(ip)}/32", 0))
+        )
+      ])
       containers = [
         {
           container_name      = trimspace(row.container_name) != "" ? trimspace(row.container_name) : "user-data"
@@ -53,6 +68,13 @@ resource "azurerm_storage_account" "upload_accounts" {
   https_traffic_only_enabled        = true
   infrastructure_encryption_enabled = true
   min_tls_version                   = "TLS1_2"
+
+  # We configure ip address if the user has provided any in the input.
+  network_rules {
+    default_action = "Deny"
+    bypass         = ["AzureServices"]
+    ip_rules       = try(each.value.ipAddresses, [])
+  }
 
   # The endpoint is intentionally internet-routable; data access still requires authentication.
   # Please note, using public network access requires CCOE exemption setup at the subscription level
