@@ -3,6 +3,8 @@
 #
 # If 'container_name' is empty, it will default to "user-data".
 # If 'security_group_name' is empty, it will default to "screening_nbsse_dev".
+# The 'ipAddresses' column can contain one or more ';' separated IP values.
+# Blank and case-insensitive 'null' values are ignored; other values are passed through for validation.
 
 data "local_file" "upload_accounts" {
   filename = "${path.module}/upload-accounts.csv"
