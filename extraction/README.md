@@ -45,51 +45,47 @@ From an Administrator PowerShell window, `cd` to a folder with enough free disk 
 $base  = "https://raw.githubusercontent.com/NHSDigital/dtos-breast-nbss-extraction/main/extraction"
 $dest  = Join-Path (Get-Location) "extraction"
 $files = @(
-    "zip_backup_files/create_nbss_back_up.bat",
-    "zip_backup_files/create_nbss_back_up.ps1",
-    "transfer_to_storage/install_tools.bat",
-    "transfer_to_storage/install_tools.ps1",
-    "transfer_to_storage/tool_versions.json",
-    "transfer_to_storage/run_azcopy.ps1"
+    "create_nbss_back_up.ps1",
+    "install_tools.ps1",
+    "tool_versions.json",
+    "run_azcopy.ps1"
 )
+New-Item -ItemType Directory -Force -Path $dest | Out-Null
 foreach ($f in $files) {
     $out = Join-Path $dest $f
-    New-Item -ItemType Directory -Force -Path (Split-Path $out) | Out-Null
     Invoke-WebRequest -Uri "$base/$f" -OutFile $out -UseBasicParsing
     Unblock-File -Path $out
 }
 Set-Location $dest
 ```
 
+`Set-ExecutionPolicy -Scope Process` only applies to the current PowerShell window. If you open a new window, `cd` back to the `extraction` folder and run it again.
+
 This creates an `extraction` folder in the current directory, laid out as follows:
 
 ```text
 extraction\
 ├── <YYYYMMDD>-<bso_code>.zip   <- created by step 1
-├── zip_backup_files\
-│   ├── create_nbss_back_up.bat
-│   └── create_nbss_back_up.ps1
-└── transfer_to_storage\
-    ├── install_tools.bat
-    ├── install_tools.ps1
-    ├── tool_versions.json
-    └── run_azcopy.ps1
+├── create_nbss_back_up.ps1
+├── install_tools.ps1
+├── tool_versions.json
+└── run_azcopy.ps1
 ```
 
 ---
 
 ## 1. Zip the backup files
 
-**Run from:** `extraction\zip_backup_files`
+**Run from:** `extraction`
 
-`create_nbss_back_up.ps1` (run through `create_nbss_back_up.bat`) does the following:
+`create_nbss_back_up.ps1` does the following:
 
 1. **Stops the Caché instance** (`CACHE`) and waits up to 60 seconds for it to shut down
 2. **Creates a zip archive** containing:
    - `NBSS\Attachments`, `NBSS\Letters` and `NBSS\Labels` (all contents; any missing folder is skipped)
    - Every `CACHE.DAT` file under `InterSystems\Cache`
    - `InterSystems\Cache\mgr\BACKUP_CACHE.DAT` (the exact name only; `BACKUP_CACHE_1.DAT` etc. are excluded)
-3. **Saves the zip** to the parent `extraction` folder as `{YYYYMMDD}-{BsoCode}.zip`
+3. **Saves the zip** to the `extraction` folder as `{YYYYMMDD}-{BsoCode}.zip`
 4. **Restarts Caché**. This happens even if creating the zip fails.
 
 ### Parameters
@@ -103,14 +99,13 @@ extraction\
 ### Usage
 
 ```powershell
-cd zip_backup_files
-.\create_nbss_back_up.bat -BsoCode "<bso_code>"
+.\create_nbss_back_up.ps1 -BsoCode "<bso_code>"
 ```
 
 If NBSS or InterSystems are installed on a different drive:
 
 ```powershell
-.\create_nbss_back_up.bat -BsoCode "<bso_code>" -NbssRoot "D:\NBSS" -CacheRoot "E:\InterSystems"
+.\create_nbss_back_up.ps1 -BsoCode "<bso_code>" -NbssRoot "D:\NBSS" -CacheRoot "E:\InterSystems"
 ```
 
 Example output:
@@ -139,13 +134,12 @@ Example output:
 
 ## 2. Transfer the zip file to Azure Storage
 
-**Run from:** `extraction\transfer_to_storage`
+**Run from:** `extraction`
 
 ### Install Azure CLI and AzCopy
 
 ```powershell
-cd ..\transfer_to_storage
-.\install_tools.bat
+.\install_tools.ps1
 ```
 
 `install_tools.ps1` installs the versions pinned in `tool_versions.json`:
@@ -158,7 +152,7 @@ The script checks that each download carries a valid Microsoft code signature be
 To install AzCopy somewhere else, pass `-AzCopyInstallDir`:
 
 ```powershell
-.\install_tools.bat -AzCopyInstallDir "D:\tools\AzCopy"
+.\install_tools.ps1 -AzCopyInstallDir "D:\tools\AzCopy"
 ```
 
 ### Upload the zip
@@ -190,11 +184,9 @@ Run from an Administrator PowerShell window after [downloading the scripts](#dow
 
 ```powershell
 # 1. Zip the backup files
-cd zip_backup_files
-.\create_nbss_back_up.bat -BsoCode "<bso_code>"
+.\create_nbss_back_up.ps1 -BsoCode "<bso_code>"
 
 # 2. Install tools (first time only) and upload
-cd ..\transfer_to_storage
-.\install_tools.bat
-.\run_azcopy.ps1 -LocalFilePath "..\<YYYYMMDD>-<bso_code>.zip" -TenantId "<tenant_id>" -StorageAccountName "<storage_account>" -ContainerName "<container_name>"
+.\install_tools.ps1
+.\run_azcopy.ps1 -LocalFilePath ".\<YYYYMMDD>-<bso_code>.zip" -TenantId "<tenant_id>" -StorageAccountName "<storage_account>" -ContainerName "<container_name>"
 ```

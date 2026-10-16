@@ -38,7 +38,8 @@ azcopy copy "$LocalFilePath" "$containerUrl" `
     --overwrite=true `
     --blob-type=BlockBlob `
     --log-level=INFO `
-    --put-md5
+    --put-md5 `
+    --check-length=false
 
 if ($LASTEXITCODE -ne 0) {
     throw "❌ AzCopy upload with Entra authentication failed. Exit code = $LASTEXITCODE"
