@@ -1,5 +1,5 @@
 param(
-    [string]$ToolVersionsFile = (Join-Path $PSScriptRoot '..\..\tool_versions.json'),
+    [string]$ToolVersionsFile = (Join-Path $PSScriptRoot 'tool_versions.json'),
     [string]$AzCopyInstallDir = (Join-Path $env:ProgramFiles 'AzCopy')
 )
 

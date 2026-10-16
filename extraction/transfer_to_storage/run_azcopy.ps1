@@ -31,10 +31,11 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "Uploading with AzCopy (auth=Entra)..." -ForegroundColor Yellow
-# do we want the --overwrite=true flag or not?
+# Upload-only role has no blobs/read, so skip the pre-upload existence check and post-upload length check.
+# Overwrites are still blocked server-side because blobs/add/action can only create new blobs.
 azcopy copy "$LocalFilePath" "$containerUrl" `
     --from-to=LocalBlob `
-    --overwrite=false `
+    --overwrite=true `
     --blob-type=BlockBlob `
     --log-level=INFO `
     --put-md5
