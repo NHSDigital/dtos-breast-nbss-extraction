@@ -57,7 +57,6 @@ foreach ($f in $files) {
     Unblock-File -Path $out
 }
 Set-Location $dest
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 ```
 
 `Set-ExecutionPolicy -Scope Process` only applies to the current PowerShell window. If you open a new window, `cd` back to the `extraction` folder and run it again.
