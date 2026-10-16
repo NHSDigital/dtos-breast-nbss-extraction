@@ -171,7 +171,7 @@ To install AzCopy somewhere else, pass `-AzCopyInstallDir`:
 
 1. Signs in to Azure CLI (`az login --tenant <tenant_id>`). A browser window opens for you to sign in with your Microsoft Entra account.
 2. Signs in to AzCopy using those Azure CLI credentials (`azcopy login --login-type azcli`)
-3. Uploads the zip as a block blob to `https://<storage_account>.blob.core.windows.net/<container_name>` with an MD5 hash (`--put-md5`). Any existing blob with the same name is **not** overwritten.
+3. Uploads the zip as a block blob to `https://<storage_account>.blob.core.windows.net/<container_name>` with an MD5 hash (`--put-md5`). The upload role can only create new blobs, so an existing blob with the same name is **not** overwritten and the upload fails with a 403.
 
 The script stops if either sign-in or the upload fails.
 
