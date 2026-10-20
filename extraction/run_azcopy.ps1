@@ -3,7 +3,8 @@ param(
     [string]$StorageAccountName = "sanbssedevupload",
     [string]$ContainerName = "uploads",
     [string]$LocalFilePath = "",
-    [string]$TenantId
+    [string]$TenantId,
+    [string]$SubscriptionId
 )
 
 Set-StrictMode -Version Latest
@@ -18,10 +19,19 @@ Write-Host "   File to upload: " -NoNewline
 Write-Host "$LocalFilePath" -ForegroundColor DarkYellow
 
 Write-Host "Signing in with Azure CLI..." -ForegroundColor Yellow
+# Suppress the interactive subscription picker (process-scoped; doesn't change global az config).
+$env:AZURE_CORE_LOGIN_EXPERIENCE_V2 = "off"
 az login --tenant $TenantId --output none
 
 if ($LASTEXITCODE -ne 0) {
     throw "❌ Azure CLI login failed. Exit code = $LASTEXITCODE"
+}
+
+Write-Host "Setting Azure subscription..." -ForegroundColor Yellow
+az account set --subscription $SubscriptionId
+
+if ($LASTEXITCODE -ne 0) {
+    throw "❌ Failed to set Azure subscription '$SubscriptionId'. Exit code = $LASTEXITCODE"
 }
 
 Write-Host "Signing in to AzCopy with Azure CLI credentials..." -ForegroundColor Yellow

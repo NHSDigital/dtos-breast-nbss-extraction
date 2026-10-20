@@ -158,21 +158,23 @@ To install AzCopy somewhere else, pass `-AzCopyInstallDir`:
 ### Upload the zip
 
 ```powershell
-.\run_azcopy.ps1 -LocalFilePath "<target_zip_path>" -TenantId "<tenant_id>" -StorageAccountName "<storage_account>" -ContainerName "<container_name>"
+.\run_azcopy.ps1 -LocalFilePath "<target_zip_path>" -TenantId "<tenant_id>" -SubscriptionId "<subscription_id>" -StorageAccountName "<storage_account>" -ContainerName "<container_name>"
 ```
 
 `run_azcopy.ps1` does the following:
 
-1. Signs in to Azure CLI (`az login --tenant <tenant_id>`). A browser window opens for you to sign in with your Microsoft Entra account.
-2. Signs in to AzCopy using those Azure CLI credentials (`azcopy login --login-type azcli`)
-3. Uploads the zip as a block blob to `https://<storage_account>.blob.core.windows.net/<container_name>` with an MD5 hash (`--put-md5`). The upload role can only create new blobs, so an existing blob with the same name is **not** overwritten and the upload fails with a 403.
+1. Signs in to Azure CLI (`az login --tenant <tenant_id>`). A browser window opens for you to sign in with your Microsoft Entra account. The interactive subscription picker is disabled.
+2. Selects the subscription (`az account set --subscription <subscription_id>`)
+3. Signs in to AzCopy using those Azure CLI credentials (`azcopy login --login-type azcli`)
+4. Uploads the zip as a block blob to `https://<storage_account>.blob.core.windows.net/<container_name>` with an MD5 hash (`--put-md5`). The upload role can only create new blobs, so an existing blob with the same name is **not** overwritten and the upload fails with a 403.
 
-The script stops if either sign-in or the upload fails.
+The script stops if sign-in, subscription selection or the upload fails.
 
 | Parameter | Default | Description |
 | --------- | ------- | ----------- |
 | `-LocalFilePath` | *(none)* | Path to the zip created in step 1 |
 | `-TenantId` | *(none)* | Microsoft Entra tenant ID. Always supply this. |
+| `-SubscriptionId` | *(none)* | Azure subscription ID to use after sign-in. Always supply this. |
 | `-StorageAccountName` | `sanbssedevupload` | Target storage account |
 | `-ContainerName` | `uploads` | Target blob container |
 
@@ -188,5 +190,5 @@ Run from an Administrator PowerShell window after [downloading the scripts](#dow
 
 # 2. Install tools (first time only) and upload
 .\install_tools.ps1
-.\run_azcopy.ps1 -LocalFilePath ".\<YYYYMMDD>-<bso_code>.zip" -TenantId "<tenant_id>" -StorageAccountName "<storage_account>" -ContainerName "<container_name>"
+.\run_azcopy.ps1 -LocalFilePath ".\<YYYYMMDD>-<bso_code>.zip" -TenantId "<tenant_id>" -SubscriptionId "<subscription_id>" -StorageAccountName "<storage_account>" -ContainerName "<container_name>"
 ```
