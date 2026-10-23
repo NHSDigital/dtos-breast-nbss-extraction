@@ -28,6 +28,9 @@ __pycache__/
 *.pyc
 *.env
 
+# Azure Functions local settings (may contain secrets)
+**/local.settings.json
+
 # macOS
 .DS_Store
 

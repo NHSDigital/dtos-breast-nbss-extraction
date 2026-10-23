@@ -43,7 +43,35 @@ variable "override_subscription_settings_enabled" {
 variable "malware_scanning_on_upload_enabled" {
   description = "Enable malware scanning on upload for Microsoft Defender for Storage"
   type        = bool
-  default     = false
+  default     = true
+}
+
+variable "defender_scan_python_version" {
+  description = "Python version for the Defender scan result Function App"
+  type        = string
+  default     = "3.11"
+}
+
+variable "defender_scan_service_plan_sku" {
+  description = "SKU for the Defender scan Function App service plan (private endpoints require Dedicated or Elastic Premium)"
+  type        = string
+  default     = "P1v3"
+}
+
+variable "defender_scan_vnet_integration_subnet_address_prefix" {
+  description = "Unused CIDR range for the Defender scan Function App VNet integration subnet in the hub VNet"
+  type        = string
+
+  validation {
+    condition     = can(cidrnetmask(var.defender_scan_vnet_integration_subnet_address_prefix))
+    error_message = "The Defender scan VNet integration subnet address prefix must be a valid CIDR range."
+  }
+}
+
+variable "azurewebsites_private_dns_zone_name" {
+  description = "Private DNS zone name for Azure Functions / App Service private endpoints"
+  type        = string
+  default     = "privatelink.azurewebsites.net"
 }
 
 variable "malware_scanning_on_upload_cap_gb_per_month" {
