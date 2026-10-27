@@ -5,11 +5,8 @@
 .DESCRIPTION
     This script performs the following steps:
       1. Stops the running InterSystems Caché instance.
-      2. Creates a zip archive containing:
-            - NBSS\Attachments  (all contents)
-            - NBSS\Letters      (all contents)
-            - NBSS\Labels       (all contents)
-            - InterSystems\Cache\mgr\BACKUP_CACHE.DAT (latest backup only)
+      2. Creates a zip archive containing the items listed in the manifest
+        (default: backup_manifest.json next to this script).
       3. Saves the zip to the folder containing this script, named:
             {YYYYMMDD}-{BsoCode}.zip
       4. Restarts the Caché instance once the zip is complete.
@@ -26,6 +23,13 @@
 
 .PARAMETER CacheRoot
     Root folder where InterSystems is installed. Defaults to C:\InterSystems.
+
+.PARAMETER ManifestPath
+    JSON manifest listing what to back up. Each item has "root" ("Nbss" or "Cache")
+    and "path" (a file or folder relative to that root; folders are added recursively).
+    An item may instead have "anyOf": a list of {root, path} alternatives; the first
+    one that exists is backed up.
+    Defaults to backup_manifest.json in the script folder.
 
 .EXAMPLE
     # Run with defaults (both on C:\)
@@ -51,16 +55,33 @@ param (
     # Root path where NBSS is installed  e.g. C:\NBSS or D:\NBSS
     [string]$NbssRoot   = "C:\NBSS",
     # Root path where InterSystems Cache is installed  e.g. C:\InterSystems or D:\InterSystems
-    [string]$CacheRoot  = "C:\InterSystems"
+    [string]$CacheRoot  = "C:\InterSystems",
+    # JSON manifest of items to back up
+    [string]$ManifestPath = (Join-Path $PSScriptRoot "backup_manifest.json")
 )
 
 $ErrorActionPreference = "Stop"
 
 # Derived paths from parameters
 $ccontrol  = Join-Path $CacheRoot "Cache\bin\ccontrol.exe"
-$backupDat = Join-Path $CacheRoot "Cache\mgr\BACKUP_CACHE.DAT"
 
 if (-not (Test-Path $ccontrol)) { throw "ccontrol.exe not found at '$ccontrol'. Verify -CacheRoot." }
+if (-not (Test-Path $ManifestPath)) { throw "Manifest not found at '$ManifestPath'." }
+
+# Validate the manifest before Cache is stopped
+$manifest = Get-Content $ManifestPath -Raw | ConvertFrom-Json
+if (-not $manifest.items) { throw "Manifest '$ManifestPath' has no 'items'." }
+$roots = @{ Nbss = $NbssRoot; Cache = $CacheRoot }
+# Each item becomes a list of candidate locations; the first that exists is used
+$items = foreach ($item in $manifest.items) {
+    $candidates = @(if ($item.anyOf) { $item.anyOf } else { $item })
+    foreach ($c in $candidates) {
+        if (-not $c.path -or -not $roots.ContainsKey([string]$c.root)) {
+            throw "Invalid manifest entry (root must be 'Nbss' or 'Cache', path required): $($c | ConvertTo-Json -Compress)"
+        }
+    }
+    , $candidates
+}
 
 $timestamp = Get-Date -Format "yyyyMMdd"
 $zipPath   = Join-Path $PSScriptRoot "${timestamp}-${BsoCode}.zip"
@@ -93,24 +114,25 @@ try {
     $zip = [System.IO.Compression.ZipFile]::Open($zipPath, 'Create')
 
     try {
-        # NBSS folders — strip NbssRoot from path to build zip entry name
-        foreach ($folder in @("Attachments","Letters","Labels")) {
-            $fullFolder = Join-Path $NbssRoot $folder
-            if (-not (Test-Path $fullFolder)) { Write-Log "Skipping (not found): $fullFolder"; continue }
-            Get-ChildItem $fullFolder -Recurse -File | ForEach-Object {
-                $entry = $_.FullName.Substring(($NbssRoot.TrimEnd('\') + '\').Length).Replace("\","/")
-                [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName, $entry, 'Optimal') | Out-Null
+        # Entry names are the path relative to the item's root
+        foreach ($candidates in $items) {
+            $full = $null
+            foreach ($c in $candidates) {
+                $root = $roots[[string]$c.root].TrimEnd('\')
+                $candidate = Join-Path $root $c.path
+                if (Test-Path $candidate) { $full = $candidate; break }
             }
-            Write-Log "Added: $fullFolder"
-        }
+            if (-not $full) {
+                Write-Log "Skipping (not found): $(($candidates | ForEach-Object { Join-Path $roots[[string]$_.root] $_.path }) -join ' | ')"
+                continue
+            }
 
-        # BACKUP_CACHE.DAT (exact name only — excludes BACKUP_CACHE_1.DAT, BACKUP_CACHE_2.DAT, etc.)
-        if (Test-Path $backupDat) {
-            $entry = $backupDat.Substring(($CacheRoot.TrimEnd('\') + '\').Length).Replace("\","/")
-            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $backupDat, $entry, 'Optimal') | Out-Null
-            Write-Log "Added: $entry ($([math]::Round((Get-Item $backupDat).Length/1MB,1)) MB)"
-        } else {
-            Write-Log "Skipping (not found): $backupDat"
+            $files = if (Test-Path $full -PathType Container) { Get-ChildItem $full -Recurse -File } else { Get-Item $full }
+            foreach ($file in $files) {
+                $entry = $file.FullName.Substring($root.Length + 1).Replace("\","/")
+                [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $file.FullName, $entry, 'Optimal') | Out-Null
+            }
+            Write-Log "Added: $full"
         }
     } finally {
         $zip.Dispose()
