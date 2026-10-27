@@ -9,7 +9,6 @@
             - NBSS\Attachments  (all contents)
             - NBSS\Letters      (all contents)
             - NBSS\Labels       (all contents)
-            - All CACHE.DAT database files found under InterSystems\Cache
             - InterSystems\Cache\mgr\BACKUP_CACHE.DAT (latest backup only)
       3. Saves the zip to the folder containing this script, named:
             {YYYYMMDD}-{BsoCode}.zip
@@ -59,11 +58,9 @@ $ErrorActionPreference = "Stop"
 
 # Derived paths from parameters
 $ccontrol  = Join-Path $CacheRoot "Cache\bin\ccontrol.exe"
-$cacheDat  = Join-Path $CacheRoot "Cache"
 $backupDat = Join-Path $CacheRoot "Cache\mgr\BACKUP_CACHE.DAT"
 
 if (-not (Test-Path $ccontrol)) { throw "ccontrol.exe not found at '$ccontrol'. Verify -CacheRoot." }
-if (-not (Test-Path $cacheDat)) { throw "Cache folder not found at '$cacheDat'. Verify -CacheRoot." }
 
 $timestamp = Get-Date -Format "yyyyMMdd"
 $zipPath   = Join-Path $PSScriptRoot "${timestamp}-${BsoCode}.zip"
@@ -105,13 +102,6 @@ try {
                 [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName, $entry, 'Optimal') | Out-Null
             }
             Write-Log "Added: $fullFolder"
-        }
-
-        # CACHE.DAT files — strip CacheRoot from path to build zip entry name
-        Get-ChildItem $cacheDat -Recurse -Filter "CACHE.DAT" -ErrorAction SilentlyContinue | ForEach-Object {
-            $entry = $_.FullName.Substring(($CacheRoot.TrimEnd('\') + '\').Length).Replace("\","/")
-            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName, $entry, 'Optimal') | Out-Null
-            Write-Log "Added: $entry ($([math]::Round($_.Length/1MB,1)) MB)"
         }
 
         # BACKUP_CACHE.DAT (exact name only — excludes BACKUP_CACHE_1.DAT, BACKUP_CACHE_2.DAT, etc.)
