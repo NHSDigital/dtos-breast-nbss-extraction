@@ -22,7 +22,7 @@ Run these steps on the source BSO machine to create a backup zip of an NBSS inst
 
 ### Other
 
-- A **recent NBSS backup** (`BACKUP_CACHE.DAT`)
+- A **recent NBSS backup** (`BACKUP_CACHE.DAT` or `BACKUP_IRIS.DAT`)
 - Enough free disk space in the download folder for the backup zip
 
 ## Variables
@@ -46,6 +46,7 @@ $base  = "https://raw.githubusercontent.com/NHSDigital/dtos-breast-nbss-extracti
 $dest  = Join-Path (Get-Location) "extraction"
 $files = @(
     "create_nbss_back_up.ps1",
+    "backup_config.json",
     "install_tools.ps1",
     "tool_versions.json",
     "run_azcopy.ps1"
@@ -67,6 +68,7 @@ This creates an `extraction` folder in the current directory, laid out as follow
 extraction\
 ├── <YYYYMMDD>-<bso_code>.zip   <- created by step 1
 ├── create_nbss_back_up.ps1
+├── backup_config.json
 ├── install_tools.ps1
 ├── tool_versions.json
 └── run_azcopy.ps1
@@ -80,13 +82,14 @@ extraction\
 
 `create_nbss_back_up.ps1` does the following:
 
-1. **Stops the Caché instance** (`CACHE`) and waits up to 60 seconds for it to shut down
-2. **Creates a zip archive** containing:
+1. **Finds the Caché/IRIS instance** under `-CacheRoot` (see `-Instance`), stops it and waits up to 60 seconds for it to shut down
+2. **Creates a zip archive** containing the items listed in `backup_config.json` (see [Backup Configuration](#backup-config)). By default:
    - `NBSS\Attachments`, `NBSS\Letters` and `NBSS\Labels` (all contents; any missing folder is skipped)
-   - Every `CACHE.DAT` file under `InterSystems\Cache`
-   - `InterSystems\Cache\mgr\BACKUP_CACHE.DAT` (the exact name only; `BACKUP_CACHE_1.DAT` etc. are excluded)
+   - The newest `BACKUP_CACHE.DAT` or `BACKUP_IRIS.DAT` found under `NBSS\Cache` or the selected instance folder, wherever it sits. Audit folders are ignored, and `BACKUP_CACHE_1.DAT` etc. are never picked (exact names only).
 3. **Saves the zip** to the `extraction` folder as `{YYYYMMDD}-{BsoCode}.zip`
-4. **Restarts Caché**. This happens even if creating the zip fails.
+4. **Restarts the instance**. This happens even if creating the zip fails.
+
+The configuration is checked before the instance is stopped, so an invalid configuration leaves Caché running.
 
 ### Parameters
 
@@ -94,7 +97,9 @@ extraction\
 | --------- | ------- | ----------- |
 | `-BsoCode` | `A000` | BSO code embedded in the zip filename |
 | `-NbssRoot` | `C:\NBSS` | Root folder where NBSS is installed |
-| `-CacheRoot` | `C:\InterSystems` | Root folder where InterSystems Caché is installed |
+| `-CacheRoot` | `C:\InterSystems` | Root folder where InterSystems is installed |
+| `-Instance` | *(auto)* | Instance name, which is also its folder under `-CacheRoot` (for example `CACHE` or `CACHE202610V2`). Optional when only one instance is installed. If several are installed the script stops and lists them, so you must supply it. |
+| `-ConfigPath` | `backup_config.json` in the script folder | JSON configuration listing what to back up |
 
 ### Usage
 
@@ -108,27 +113,68 @@ If NBSS or InterSystems are installed on a different drive:
 .\create_nbss_back_up.ps1 -BsoCode "<bso_code>" -NbssRoot "D:\NBSS" -CacheRoot "E:\InterSystems"
 ```
 
+If more than one instance is installed under `-CacheRoot`:
+
+```powershell
+.\create_nbss_back_up.ps1 -BsoCode "<bso_code>" -Instance "CACHE202610V2"
+```
+
 Example output:
 
 ```output
-[14:30:15] NBSS root   : C:\NBSS
-[14:30:15] Cache root  : C:\InterSystems
-[14:30:15] Stopping Cache...
-[14:30:20] Cache stopped.
+[14:30:15] Instance    : CACHE (C:\InterSystems\Cache)
+[14:30:15] Root Nbss: C:\NBSS
+[14:30:15] Root Cache: C:\InterSystems
+[14:30:15] Root Instance: C:\InterSystems\Cache
+[14:30:15] Stopping CACHE...
+[14:30:20] CACHE stopped.
 [14:30:20] Creating zip: C:\path\to\extraction\20260707-A0001344.zip
 [14:30:45] Added: C:\NBSS\Attachments
-[14:30:50] Added: Cache/mgr/CACHE.DAT (2500.5 MB)
-[14:31:00] Added: Cache/mgr/BACKUP_CACHE.DAT (1200.3 MB)
+[14:31:00] Added: E:\NBSS\Cache\LIV_DAT\BACKUP_CACHE.DAT
 [14:31:05] Backup complete: C:\path\to\extraction\20260707-A0001344.zip (3700.80 MB)
-[14:31:10] Restarting Cache...
-[14:31:15] Cache restarted successfully.
+[14:31:10] Restarting CACHE...
+[14:31:15] CACHE restarted successfully.
 ```
+
+### Backup Configuration
+
+`backup_config.json` controls what goes into the zip. Edit it if a machine's layout differs. The default is:
+
+```json
+{
+  "items": [
+    { "root": "Nbss",  "path": "Attachments" },
+    { "root": "Nbss",  "path": "Letters" },
+    { "root": "Nbss",  "path": "Labels" },
+    {
+      "latest": true,
+      "exclude": ["*audit*"],
+      "anyOf": [
+        { "root": "Nbss",     "path": "Cache", "find": ["BACKUP_CACHE.DAT", "BACKUP_IRIS.DAT"] },
+        { "root": "Instance", "find": ["BACKUP_CACHE.DAT", "BACKUP_IRIS.DAT"] }
+      ]
+    }
+  ]
+}
+```
+
+| Field | Description |
+| ----- | ----------- |
+| `root` | Named root the path is relative to. Built in: `Nbss` (`-NbssRoot`), `Cache` (`-CacheRoot`) and `Instance` (the selected instance folder). More can be declared in a top-level `"roots"` object, for example `"roots": { "Restore": "E:\\Cache Restore" }`. |
+| `path` | File or folder relative to the root. Folders are added recursively. Wildcards such as `Cache*/mgr` are allowed. |
+| `find` | Instead of an exact `path`, one or more exact file names searched for recursively under `root\path` (`path` is optional), wherever they sit. |
+| `anyOf` | A list of alternative `{ root, path or find }` locations for one item. Without `latest`, the first alternative that has a match is used. |
+| `latest` | When `true`, only the single newest match (by last-modified time) across all alternatives is added. |
+| `exclude` | Wildcard patterns matched against the full file path. Matching files are ignored. |
+
+A missing item is logged and skipped.
 
 ### Notes
 
 - Caché will be unavailable while the zip is being created (usually a few minutes, depending on database size).
-- If a zip with the same name already exists, the script fails, so delete or rename the existing zip first. Caché is still restarted.
-- If Caché cannot be restarted, the script ends with an error. Start Caché manually.
+- `LIV_APP` and `MEDIFACT` also contain `BACKUP_CACHE.DAT` or `BACKUP_IRIS.DAT` files. Because the default configuration picks the single newest match, it could select one of those instead of `LIV_DAT`. Narrow the `path` (for example `Cache/LIV_DAT`) if you only want the live data backup.
+- If a zip with the same name already exists, the script fails, so delete or rename the existing zip first. The instance is still restarted.
+- If the instance cannot be restarted, the script ends with an error. Start it manually.
 
 ---
 

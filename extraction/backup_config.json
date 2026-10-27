@@ -1,0 +1,15 @@
+{
+  "items": [
+    { "root": "Nbss",  "path": "Attachments" },
+    { "root": "Nbss",  "path": "Letters" },
+    { "root": "Nbss",  "path": "Labels" },
+    {
+      "latest": true,
+      "exclude": ["*audit*"],
+      "anyOf": [
+        { "root": "Nbss",  "path": "Cache", "find": ["BACKUP_CACHE.DAT", "BACKUP_IRIS.DAT"] },
+        { "root": "Instance", "find": ["BACKUP_CACHE.DAT", "BACKUP_IRIS.DAT"] }
+      ]
+    }
+  ]
+}

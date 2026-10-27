@@ -5,8 +5,8 @@
 .DESCRIPTION
     This script performs the following steps:
       1. Stops the running InterSystems Caché instance.
-      2. Creates a zip archive containing the items listed in the manifest
-        (default: backup_manifest.json next to this script).
+      2. Creates a zip archive containing the items listed in the config file
+        (default: backup_config.json next to this script).
       3. Saves the zip to the folder containing this script, named:
             {YYYYMMDD}-{BsoCode}.zip
       4. Restarts the Caché instance once the zip is complete.
@@ -24,12 +24,23 @@
 .PARAMETER CacheRoot
     Root folder where InterSystems is installed. Defaults to C:\InterSystems.
 
-.PARAMETER ManifestPath
-    JSON manifest listing what to back up. Each item has "root" ("Nbss" or "Cache")
-    and "path" (a file or folder relative to that root; folders are added recursively).
+.PARAMETER Instance
+    Name of the instance to stop and restart, which is also its folder under -CacheRoot
+    (e.g. CACHE or CACHE202610V2). Optional when only one instance is installed.
+
+.PARAMETER ConfigPath
+    JSON config listing what to back up. Roots are named folders and can have any name:
+    "Nbss" and "Cache" come from -NbssRoot and -CacheRoot, "Instance" is the selected instance
+    folder, and more can be declared in the config "roots" object (name -> folder).
+    Each item has "root" (a root name) and "path" (a file or folder relative to that root;
+    folders are added recursively).
     An item may instead have "anyOf": a list of {root, path} alternatives; the first
-    one that exists is backed up.
-    Defaults to backup_manifest.json in the script folder.
+    alternative that exists is backed up. Paths may contain wildcards (e.g. "Cache*/mgr").
+    Add "latest": true to an item to pick the single newest match across all alternatives.
+    Instead of "path", an entry can use "find" (a file name or list of names, exact match) to
+    search recursively under root\path (path optional) regardless of folder layout.
+    An item can also have "exclude": wildcard patterns matched against the full file path.
+    Defaults to backup_config.json in the script folder.
 
 .EXAMPLE
     # Run with defaults (both on C:\)
@@ -42,6 +53,10 @@
 .EXAMPLE
     # Only NBSS is on a different drive
     .\create_nbss_back_up.ps1 -BsoCode "A0001344" -NbssRoot "D:\NBSS"
+
+.EXAMPLE
+    # Two instances installed under C:\InterSystems
+    .\create_nbss_back_up.ps1 -BsoCode "A0001344" -Instance "CACHE202610V2"
 
 .NOTES
     Must be run as Administrator.
@@ -56,31 +71,44 @@ param (
     [string]$NbssRoot   = "C:\NBSS",
     # Root path where InterSystems Cache is installed  e.g. C:\InterSystems or D:\InterSystems
     [string]$CacheRoot  = "C:\InterSystems",
-    # JSON manifest of items to back up
-    [string]$ManifestPath = (Join-Path $PSScriptRoot "backup_manifest.json")
+    # Instance name / folder under CacheRoot  e.g. CACHE202610V2
+    [string]$Instance   = "",
+    # JSON config of items to back up
+    [string]$ConfigPath = (Join-Path $PSScriptRoot "backup_config.json")
 )
 
 $ErrorActionPreference = "Stop"
 
-# Derived paths from parameters
-$ccontrol  = Join-Path $CacheRoot "Cache\bin\ccontrol.exe"
+# Locate the instance to stop; never guess when several are installed
+$instDirs = @(Get-ChildItem -Path $CacheRoot -Directory -ErrorAction SilentlyContinue |
+    Where-Object { (Test-Path (Join-Path $_.FullName 'bin\ccontrol.exe')) -or (Test-Path (Join-Path $_.FullName 'bin\iris.exe')) })
+if ($Instance) { $instDirs = @($instDirs | Where-Object { $_.Name -eq $Instance }) }
+if ($instDirs.Count -eq 0) { throw "No instance found under '$CacheRoot'$(if ($Instance) { " named '$Instance'" }). Verify -CacheRoot and -Instance." }
+if ($instDirs.Count -gt 1) { throw "Several instances found under '$CacheRoot' ($($instDirs.Name -join ', ')). Specify -Instance." }
+$instDir  = $instDirs[0].FullName
+$instName = $instDirs[0].Name.ToUpper()
+$ccontrol = @('bin\ccontrol.exe', 'bin\iris.exe') | ForEach-Object { Join-Path $instDir $_ } | Where-Object { Test-Path $_ } | Select-Object -First 1
 
-if (-not (Test-Path $ccontrol)) { throw "ccontrol.exe not found at '$ccontrol'. Verify -CacheRoot." }
-if (-not (Test-Path $ManifestPath)) { throw "Manifest not found at '$ManifestPath'." }
+if (-not (Test-Path $ConfigPath)) { throw "Config not found at '$ConfigPath'." }
 
-# Validate the manifest before Cache is stopped
-$manifest = Get-Content $ManifestPath -Raw | ConvertFrom-Json
-if (-not $manifest.items) { throw "Manifest '$ManifestPath' has no 'items'." }
-$roots = @{ Nbss = $NbssRoot; Cache = $CacheRoot }
-# Each item becomes a list of candidate locations; the first that exists is used
-$items = foreach ($item in $manifest.items) {
+# Validate the config before Cache is stopped
+$config = Get-Content $ConfigPath -Raw | ConvertFrom-Json
+if (-not $config.items) { throw "Config '$ConfigPath' has no 'items'." }
+# Root names are free-form: config roots, then -NbssRoot/-CacheRoot
+$roots = @{}
+if ($config.roots) { foreach ($p in $config.roots.PSObject.Properties) { $roots[$p.Name] = [string]$p.Value } }
+if ($PSBoundParameters.ContainsKey('NbssRoot')  -or -not $roots.ContainsKey('Nbss'))  { $roots['Nbss']  = $NbssRoot }
+if ($PSBoundParameters.ContainsKey('CacheRoot') -or -not $roots.ContainsKey('Cache')) { $roots['Cache'] = $CacheRoot }
+$roots['Instance'] = $instDir
+# Each item becomes a list of candidate locations (paths may use wildcards)
+$items = foreach ($item in $config.items) {
     $candidates = @(if ($item.anyOf) { $item.anyOf } else { $item })
     foreach ($c in $candidates) {
-        if (-not $c.path -or -not $roots.ContainsKey([string]$c.root)) {
-            throw "Invalid manifest entry (root must be 'Nbss' or 'Cache', path required): $($c | ConvertTo-Json -Compress)"
+        if ((-not $c.path -and -not $c.find) -or -not $roots.ContainsKey([string]$c.root)) {
+            throw "Invalid config entry (root must be one of: $($roots.Keys -join ', '); path or find required): $($c | ConvertTo-Json -Compress)"
         }
     }
-    , $candidates
+    , [pscustomobject]@{ Latest = [bool]$item.latest; Exclude = @($item.exclude); Candidates = $candidates }
 }
 
 $timestamp = Get-Date -Format "yyyyMMdd"
@@ -88,21 +116,27 @@ $zipPath   = Join-Path $PSScriptRoot "${timestamp}-${BsoCode}.zip"
 
 function Write-Log { param([string]$m) Write-Host "[$(Get-Date -Format 'HH:mm:ss')] $m" }
 
-Write-Log "NBSS root   : $NbssRoot"
-Write-Log "Cache root  : $CacheRoot"
+# Only this instance's processes, so other running instances don't affect the waits
+function Get-InstanceProcess {
+    Get-Process -Name "cache", "irisdb" -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$instDir\*" }
+}
 
-# Stop Cache
-Write-Log "Stopping Cache..."
+Write-Log "Instance    : $instName ($instDir)"
+
+foreach ($k in $roots.Keys) { Write-Log ("Root {0}: {1}" -f $k, $roots[$k]) }
+
+# Stop the instance
+Write-Log "Stopping $instName..."
 $LASTEXITCODE = 0
-& $ccontrol stop CACHE quietly
-if ($LASTEXITCODE -ne 0) { throw "Failed to stop Cache via ccontrol (exit code $LASTEXITCODE). Check -CacheRoot and the Cache instance name." }
+& $ccontrol stop $instName quietly
+if ($LASTEXITCODE -ne 0) { throw "Failed to stop $instName (exit code $LASTEXITCODE). Check -CacheRoot and -Instance." }
 $waited = 0
-while ((Get-Process -Name "cache" -ErrorAction SilentlyContinue) -and $waited -lt 60) {
+while ((Get-InstanceProcess) -and $waited -lt 60) {
     Start-Sleep -Seconds 5; $waited += 5
     Write-Log "Waiting... ($waited s)"
 }
-if (Get-Process -Name "cache" -ErrorAction SilentlyContinue) { throw "Cache did not stop in time." }
-Write-Log "Cache stopped."
+if (Get-InstanceProcess) { throw "$instName did not stop in time." }
+Write-Log "$instName stopped."
 
 # Caché was stopped — guarantee a restart attempt regardless of what happens next
 $cacheRestartError = $null
@@ -115,24 +149,43 @@ try {
 
     try {
         # Entry names are the path relative to the item's root
-        foreach ($candidates in $items) {
-            $full = $null
-            foreach ($c in $candidates) {
+        foreach ($item in $items) {
+            $found = @(for ($i = 0; $i -lt $item.Candidates.Count; $i++) {
+                $c = $item.Candidates[$i]
                 $root = $roots[[string]$c.root].TrimEnd('\')
-                $candidate = Join-Path $root $c.path
-                if (Test-Path $candidate) { $full = $candidate; break }
+                if ($c.find) {
+                    $base = if ($c.path) { Join-Path $root $c.path } else { $root }
+                    foreach ($name in @($c.find)) {
+                        Get-ChildItem -Path $base -Recurse -File -Filter $name -ErrorAction SilentlyContinue |
+                            ForEach-Object { [pscustomobject]@{ Index = $i; Root = $root; Item = $_ } }
+                    }
+                } else {
+                    Get-Item -Path (Join-Path $root $c.path) -ErrorAction SilentlyContinue |
+                        ForEach-Object { [pscustomobject]@{ Index = $i; Root = $root; Item = $_ } }
+                }
+            })
+            if ($item.Exclude) {
+                $found = @($found | Where-Object { $p = $_.Item.FullName; -not ($item.Exclude | Where-Object { $p -like $_ }) })
             }
-            if (-not $full) {
-                Write-Log "Skipping (not found): $(($candidates | ForEach-Object { Join-Path $roots[[string]$_.root] $_.path }) -join ' | ')"
+            if (-not $found) {
+                Write-Log "Skipping (not found): $(($item.Candidates | ForEach-Object { ('{0}\{1} {2}' -f $roots[[string]$_.root], $_.path, ($_.find -join ',')).Trim() }) -join ' | ')"
                 continue
             }
-
-            $files = if (Test-Path $full -PathType Container) { Get-ChildItem $full -Recurse -File } else { Get-Item $full }
-            foreach ($file in $files) {
-                $entry = $file.FullName.Substring($root.Length + 1).Replace("\","/")
-                [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $file.FullName, $entry, 'Optimal') | Out-Null
+            if ($item.Latest) {
+                $found = @($found | Sort-Object { $_.Item.LastWriteTime } -Descending | Select-Object -First 1)
+            } else {
+                $firstIndex = $found[0].Index
+                $found = @($found | Where-Object { $_.Index -eq $firstIndex })
             }
-            Write-Log "Added: $full"
+
+            foreach ($f in $found) {
+                $files = if ($f.Item.PSIsContainer) { Get-ChildItem -LiteralPath $f.Item.FullName -Recurse -File } else { $f.Item }
+                foreach ($file in $files) {
+                    $entry = $file.FullName.Substring($f.Root.Length + 1).Replace("\","/")
+                    [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $file.FullName, $entry, 'Optimal') | Out-Null
+                }
+                Write-Log "Added: $($f.Item.FullName)"
+            }
         }
     } finally {
         $zip.Dispose()
@@ -143,23 +196,23 @@ try {
     # Restart Caché — runs even if zip creation threw an exception.
     # Failures are recorded in $cacheRestartError and thrown after this block so
     # they do not suppress any in-flight zip exception.
-    Write-Log "Restarting Cache..."
+    Write-Log "Restarting $instName..."
     $LASTEXITCODE = 0
-    & $ccontrol start CACHE
+    & $ccontrol start $instName
     if ($LASTEXITCODE -ne 0) {
-        $cacheRestartError = "ccontrol failed to start Cache (exit code $LASTEXITCODE). Please start it manually."
+        $cacheRestartError = "Failed to start $instName (exit code $LASTEXITCODE). Please start it manually."
         Write-Log "ERROR: $cacheRestartError"
     } else {
         $waited = 0
-        while (-not (Get-Process -Name "cache" -ErrorAction SilentlyContinue) -and $waited -lt 60) {
+        while (-not (Get-InstanceProcess) -and $waited -lt 60) {
             Start-Sleep -Seconds 5; $waited += 5
-            Write-Log "Waiting for Cache to start... ($waited s)"
+            Write-Log "Waiting for $instName to start... ($waited s)"
         }
-        if (-not (Get-Process -Name "cache" -ErrorAction SilentlyContinue)) {
-            $cacheRestartError = "Cache did not start in time. Please start it manually."
+        if (-not (Get-InstanceProcess)) {
+            $cacheRestartError = "$instName did not start in time. Please start it manually."
             Write-Log "ERROR: $cacheRestartError"
         } else {
-            Write-Log "Cache restarted successfully."
+            Write-Log "$instName restarted successfully."
         }
     }
 }
