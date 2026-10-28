@@ -83,7 +83,7 @@ extraction\
 `create_nbss_back_up.ps1` does the following:
 
 1. **Finds the Caché/IRIS instance** under `-CacheRoot` (see `-Instance`), stops it and waits up to 60 seconds for it to shut down
-2. **Creates a zip archive** containing the items listed in `backup_config.json` (see [Backup Configuration](#backup-config)). By default:
+2. **Creates a zip archive** containing the items listed in `backup_config.json` (see [Backup Configuration](#backup-configuration)). By default:
    - `NBSS\Attachments`, `NBSS\Letters` and `NBSS\Labels` (all contents; any missing folder is skipped)
    - The newest `BACKUP_CACHE.DAT` or `BACKUP_IRIS.DAT` found under `NBSS\Cache` or the selected instance folder, wherever it sits. Audit folders are ignored, and `BACKUP_CACHE_1.DAT` etc. are never picked (exact names only).
 3. **Saves the zip** to the `extraction` folder as `{YYYYMMDD}-{BsoCode}.zip`
