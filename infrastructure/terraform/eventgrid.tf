@@ -27,13 +27,22 @@ resource "azurerm_storage_container" "eventgrid_dead_letter" {
   container_access_type = "private"
 }
 
+data "azurerm_storage_account" "upload_accounts_identity" {
+  for_each = local.upload_accounts_map
+
+  name                = each.value.account_name
+  resource_group_name = azurerm_resource_group.deploy_resource_group.name
+
+  depends_on = [azurerm_storage_account.upload_accounts]
+}
+
 # Allow each upload storage account to publish malware scan results to the topic.
 resource "azurerm_role_assignment" "upload_eventgrid_data_sender" {
   for_each = local.upload_accounts_map
 
   scope                = azurerm_eventgrid_topic.defender_scan.id
   role_definition_name = "EventGrid Data Sender"
-  principal_id         = azurerm_storage_account.upload_accounts[each.key].identity[0].principal_id
+  principal_id         = data.azurerm_storage_account.upload_accounts_identity[each.key].identity[0].principal_id
 }
 
 # Deliver scan results to a storage queue so the Function App can remain private
