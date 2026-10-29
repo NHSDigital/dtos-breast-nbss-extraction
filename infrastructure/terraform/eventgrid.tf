@@ -13,7 +13,7 @@ resource "azurerm_eventgrid_topic" "defender_scan" {
   location            = azurerm_resource_group.deploy_resource_group.location
 
   input_schema                  = "EventGridSchema"
-  public_network_access_enabled = true
+  public_network_access_enabled = false
   local_auth_enabled            = false
 
   identity {
