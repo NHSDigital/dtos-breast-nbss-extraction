@@ -14,7 +14,7 @@ resource "azurerm_eventgrid_topic" "defender_scan" {
 
   input_schema                  = "EventGridSchema"
   public_network_access_enabled = true
-  local_auth_enabled            = true
+  local_auth_enabled            = false
 
   identity {
     type = "SystemAssigned"

@@ -55,7 +55,7 @@ variable "defender_scan_python_version" {
 variable "defender_scan_service_plan_sku" {
   description = "SKU for the Defender scan Function App service plan (private endpoints require Dedicated or Elastic Premium)"
   type        = string
-  default     = "P1v3"
+  default     = "EP1"
 }
 
 variable "defender_scan_vnet_integration_subnet_address_prefix" {
