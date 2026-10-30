@@ -34,8 +34,33 @@ data "azurerm_subnet" "hub_private_endpoint" {
   resource_group_name  = data.azurerm_resource_group.hub_network.name
 }
 
+resource "azurerm_subnet" "defender_scan_vnet_integration" {
+  provider             = azurerm.hub
+  name                 = "SN-${upper(var.hub)}-UKS-HUB-defender-scan-vnet-integration"
+  resource_group_name  = data.azurerm_resource_group.hub_network.name
+  virtual_network_name = data.azurerm_virtual_network.hub.name
+  address_prefixes     = [var.defender_scan_vnet_integration_subnet_address_prefix]
+
+  delegation {
+    name = "Microsoft.Web-serverFarms"
+
+    service_delegation {
+      name = "Microsoft.Web/serverFarms"
+      actions = [
+        "Microsoft.Network/virtualNetworks/subnets/action",
+      ]
+    }
+  }
+}
+
 data "azurerm_private_dns_zone" "blob" {
   provider            = azurerm.hub
   name                = var.storage_blob_private_dns_zone_name
+  resource_group_name = "rg-hub-${var.hub}-uks-private-dns-zones"
+}
+
+data "azurerm_private_dns_zone" "azurewebsites" {
+  provider            = azurerm.hub
+  name                = var.azurewebsites_private_dns_zone_name
   resource_group_name = "rg-hub-${var.hub}-uks-private-dns-zones"
 }
