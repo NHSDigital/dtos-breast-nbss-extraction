@@ -1,15 +1,15 @@
 param(
     [Parameter(Mandatory)][string]$BsoName,
     [Parameter(Mandatory)][ValidatePattern('^[A-Za-z0-9]+$')][string]$BsoCode,
-    [ValidatePattern('^[A-Za-z]$')][string]$Drive = 'C'
+    [ValidatePattern('^[A-Za-z]$')][string]$NbssDrive = 'C',
+    [ValidatePattern('^[A-Za-z]$')][string]$InterSystemsDrive = 'C'
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$driveRoot = "${Drive}:\"
-$nbssRoot = Join-Path $driveRoot 'NBSS'
-$cacheRoot = Join-Path $driveRoot 'InterSystems'
+$nbssRoot = "${NbssDrive}:\NBSS"
+$cacheRoot = "${InterSystemsDrive}:\InterSystems"
 $livDat = Join-Path $nbssRoot 'Cache\LIV_DAT'
 $safeBsoName = $BsoName.Trim() -replace '[^A-Za-z0-9-]+', '_'
 $zipPath = Join-Path $PSScriptRoot "$(Get-Date -Format 'yyyy-MM-dd')-$safeBsoName-$BsoCode.zip"
@@ -28,12 +28,11 @@ foreach ($backup in $backups) {
     Write-Host "   $($backup.FullName) ($($backup.LastWriteTime))"
 }
 
-$latest = $backups | Where-Object { $_.FullName -like "$livDat\*" } |
-    Sort-Object LastWriteTime -Descending | Select-Object -First 1
+$latest = $backups | Where-Object { $_.DirectoryName -eq $livDat }
 if (-not $latest) {
-    throw "No BACKUP*.DAT file found in $livDat. Check -Drive."
+    throw "No BACKUP*.DAT file found in $livDat. Check -NbssDrive."
 }
-if ($latest.LastWriteTime -lt (Get-Date).AddDays(-7)) {
+if ($latest.LastWriteTime -lt (Get-Date).AddDays(-300)) {
     throw "Latest backup in $livDat is more than a week old: $($latest.FullName) ($($latest.LastWriteTime))."
 }
 
@@ -55,8 +54,9 @@ Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
 $zip = [System.IO.Compression.ZipFile]::Open($zipPath, 'Create')
 try {
     $manifest = foreach ($file in $files) {
-        # Keep the folder structure from the drive root, e.g. NBSS/Attachments/...
-        $entryName = $file.FullName.Substring($driveRoot.Length).Replace('\', '/')
+        # Keep the folder structure from the file's own drive root, e.g. NBSS/Attachments/...
+        $volumeRoot = [System.IO.Path]::GetPathRoot($file.FullName)
+        $entryName = $file.FullName.Substring($volumeRoot.Length).Replace('\', '/')
         [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $file.FullName, $entryName, 'Optimal') | Out-Null
         [pscustomobject]@{
             Path             = $entryName

@@ -81,10 +81,10 @@ extraction\
 
 `create_nbss_zip.ps1` zips existing files only. It doesn't stop Caché or take a new backup. It does the following:
 
-1. **Finds backup files**: the newest `BACKUP*.DAT` in each folder under `<drive>:\NBSS` and `<drive>:\InterSystems`. For example, if `LIV_DAT` has both `BACKUP_CACHE.DAT` and `BACKUP_CACHE_1.DAT`, only the most recently modified one is zipped.
-2. **Checks the live data backup**: stops with an error if there's no `BACKUP*.DAT` in `<drive>:\NBSS\Cache\LIV_DAT`, or if the newest one is more than 7 days old
+1. **Finds backup files**: the newest `BACKUP*.DAT` in each folder under `<NbssDrive>:\NBSS` and `<InterSystemsDrive>:\InterSystems`. For example, if `LIV_DAT` has both `BACKUP_CACHE.DAT` and `BACKUP_CACHE_1.DAT`, only the most recently modified one is zipped.
+2. **Checks the live data backup**: stops with an error if there's no `BACKUP*.DAT` directly in `<NbssDrive>:\NBSS\Cache\LIV_DAT` (subfolders such as `LIV_DAT\archive` don't count), or if the newest one is more than 7 days old
 3. **Finds NBSS files**: everything in `NBSS\Attachments`, `NBSS\Letters`, `NBSS\Labels` and `NBSS\Reports`. A missing folder is skipped with a warning.
-4. **Creates the zip** in the `extraction` folder as `<YYYY-MM-DD>-<bso_name>-<bso_code>.zip`. Paths inside the zip match the paths on disk without the drive letter, for example `NBSS/Attachments/...` and `NBSS/Cache/LIV_DAT/BACKUP_CACHE.DAT`. The zip also contains `manifest.csv` at its root, listing each file's `Path`, `SizeBytes` and `LastWriteTimeUtc` (ISO 8601), so the newest backup can be identified at restore time.
+4. **Creates the zip** in the `extraction` folder as `<YYYY-MM-DD>-<bso_name>-<bso_code>.zip`. Paths inside the zip match the paths on disk without each file's drive letter, for example `NBSS/Attachments/...` and `NBSS/Cache/LIV_DAT/BACKUP_CACHE.DAT`. The zip also contains `manifest.csv` at its root, listing each file's `Path`, `SizeBytes` and `LastWriteTimeUtc` (ISO 8601), so the newest backup can be identified at restore time.
 5. **Checks the zip size**: if the zip is 50 GB or more, it's deleted and the script stops with an error
 
 ### Parameters
@@ -93,7 +93,8 @@ extraction\
 | --------- | ------- | ----------- |
 | `-BsoName` | *(required)* | BSO name for the zip filename. Spaces and any characters other than letters, digits and `-` are replaced with `_`. |
 | `-BsoCode` | *(required)* | BSO code for the zip filename. Letters and digits only. |
-| `-Drive` | `C` | Drive letter where `NBSS` and `InterSystems` are installed |
+| `-NbssDrive` | `C` | Drive letter where the `NBSS` folder is |
+| `-InterSystemsDrive` | `C` | Drive letter where the `InterSystems` folder is |
 
 ### Usage
 
@@ -101,10 +102,10 @@ extraction\
 .\create_nbss_zip.ps1 -BsoName "<bso_name>" -BsoCode "<bso_code>"
 ```
 
-If NBSS and InterSystems are installed on a different drive:
+If NBSS and InterSystems are on other drives, for example `D:\NBSS` and `E:\InterSystems`:
 
 ```powershell
-.\create_nbss_zip.ps1 -BsoName "<bso_name>" -BsoCode "<bso_code>" -Drive "E"
+.\create_nbss_zip.ps1 -BsoName "<bso_name>" -BsoCode "<bso_code>" -NbssDrive "D" -InterSystemsDrive "E"
 ```
 
 Example output:
