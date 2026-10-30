@@ -32,7 +32,7 @@ $latest = $backups | Where-Object { $_.DirectoryName -eq $livDat }
 if (-not $latest) {
     throw "No BACKUP*.DAT file found in $livDat. Check -NbssDrive."
 }
-if ($latest.LastWriteTime -lt (Get-Date).AddDays(-300)) {
+if ($latest.LastWriteTime -lt (Get-Date).AddDays(-7)) {
     throw "Latest backup in $livDat is more than a week old: $($latest.FullName) ($($latest.LastWriteTime))."
 }
 
@@ -74,11 +74,15 @@ try {
     $zip.Dispose()
 }
 catch {
-    $zip.Dispose()
-    # An incomplete zip is still a valid archive, so remove it to avoid it being uploaded.
-    Remove-Item -LiteralPath $zipPath -Force -ErrorAction SilentlyContinue
-    if (Test-Path -LiteralPath $zipPath) {
-        Write-Warning "Could not delete incomplete zip, delete it manually before uploading: $zipPath"
+    try {
+        $zip.Dispose()
+    }
+    finally {
+        # An incomplete zip is still a valid archive, so remove it to avoid it being uploaded.
+        Remove-Item -LiteralPath $zipPath -Force -ErrorAction SilentlyContinue
+        if (Test-Path -LiteralPath $zipPath) {
+            Write-Warning "Could not delete incomplete zip, delete it manually before uploading: $zipPath"
+        }
     }
     throw
 }
