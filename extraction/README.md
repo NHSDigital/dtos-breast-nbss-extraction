@@ -6,7 +6,7 @@ Run these steps on the source BSO machine to create a backup zip of an NBSS inst
 2. [Transfer the zip file to Azure Storage](#2-transfer-the-zip-file-to-azure-storage)
 
 > [!IMPORTANT]
-> Open PowerShell **as Administrator** (right-click PowerShell > **Run as administrator**) before running any of the commands below. Administrator rights are needed to install Azure CLI and AzCopy, and to stop and restart Caché.
+> Open PowerShell **as Administrator** (right-click PowerShell > **Run as administrator**) before running any of the commands below. Administrator rights are needed to install Azure CLI and AzCopy.
 
 ## Prerequisites
 
@@ -22,8 +22,8 @@ Run these steps on the source BSO machine to create a backup zip of an NBSS inst
 
 ### Other
 
-- A **recent NBSS backup** (`BACKUP_CACHE.DAT`)
-- Enough free disk space in the download folder for the backup zip
+- An **NBSS backup** (`BACKUP*.DAT`, for example `BACKUP_CACHE.DAT` or `BACKUP_IRIS.DAT`) in `NBSS\Cache\LIV_DAT` that is less than 7 days old
+- Enough free disk space in the download folder for the backup zip (up to 50 GB)
 
 ## Variables
 
@@ -31,6 +31,7 @@ Gather these values before starting. They are referenced as `<variable_name>` th
 
 | Variable | Description | Example |
 | -------- | ----------- | ------- |
+| `<bso_name>` | Name of the screening unit being backed up | `West of London` |
 | `<bso_code>` | BSO code for the screening unit being backed up | `A0001344` |
 | `<storage_account>` | Azure Storage Account name to upload to | `sanbssedevupload` |
 | `<container_name>` | Blob container within the storage account | `uploads` |
@@ -45,7 +46,7 @@ From an Administrator PowerShell window, `cd` to a folder with enough free disk 
 $base  = "https://raw.githubusercontent.com/NHSDigital/dtos-breast-nbss-extraction/main/extraction"
 $dest  = Join-Path (Get-Location) "extraction"
 $files = @(
-    "create_nbss_back_up.ps1",
+    "create_nbss_zip.ps1",
     "install_tools.ps1",
     "tool_versions.json",
     "run_azcopy.ps1"
@@ -65,8 +66,8 @@ This creates an `extraction` folder in the current directory, laid out as follow
 
 ```text
 extraction\
-├── <YYYYMMDD>-<bso_code>.zip   <- created by step 1
-├── create_nbss_back_up.ps1
+├── <YYYY-MM-DD>-<bso_name>-<bso_code>.zip   <- created by step 1
+├── create_nbss_zip.ps1
 ├── install_tools.ps1
 ├── tool_versions.json
 └── run_azcopy.ps1
@@ -78,57 +79,53 @@ extraction\
 
 **Run from:** `extraction`
 
-`create_nbss_back_up.ps1` does the following:
+`create_nbss_zip.ps1` zips existing files only. It doesn't stop Caché or take a new backup. It does the following:
 
-1. **Stops the Caché instance** (`CACHE`) and waits up to 60 seconds for it to shut down
-2. **Creates a zip archive** containing:
-   - `NBSS\Attachments`, `NBSS\Letters` and `NBSS\Labels` (all contents; any missing folder is skipped)
-   - Every `CACHE.DAT` file under `InterSystems\Cache`
-   - `InterSystems\Cache\mgr\BACKUP_CACHE.DAT` (the exact name only; `BACKUP_CACHE_1.DAT` etc. are excluded)
-3. **Saves the zip** to the `extraction` folder as `{YYYYMMDD}-{BsoCode}.zip`
-4. **Restarts Caché**. This happens even if creating the zip fails.
+1. **Finds backup files**: the newest `BACKUP*.DAT` in each folder under `<NbssDrive>:\NBSS` and `<InterSystemsDrive>:\InterSystems`. For example, if `LIV_DAT` has both `BACKUP_CACHE.DAT` and `BACKUP_CACHE_1.DAT`, only the most recently modified one is zipped.
+2. **Checks the live data backup**: stops with an error if there's no `BACKUP*.DAT` directly in `<NbssDrive>:\NBSS\Cache\LIV_DAT` (subfolders such as `LIV_DAT\archive` don't count), or if the newest one is more than 7 days old
+3. **Finds NBSS files**: everything in `NBSS\Attachments`, `NBSS\Letters`, `NBSS\Labels` and `NBSS\Reports`. A missing folder is skipped with a warning.
+4. **Creates the zip** in the `extraction` folder as `<YYYY-MM-DD>-<bso_name>-<bso_code>.zip`. Paths inside the zip match the paths on disk without each file's drive letter, for example `NBSS/Attachments/...` and `NBSS/Cache/LIV_DAT/BACKUP_CACHE.DAT`. The zip also contains `manifest.csv` at its root, listing each file's `Path`, `SizeBytes` and `LastWriteTimeUtc` (ISO 8601), so the newest backup can be identified at restore time.
+5. **Checks the zip size**: if the zip is 50 GB or more, it's deleted and the script stops with an error
 
 ### Parameters
 
 | Parameter | Default | Description |
 | --------- | ------- | ----------- |
-| `-BsoCode` | `A000` | BSO code embedded in the zip filename |
-| `-NbssRoot` | `C:\NBSS` | Root folder where NBSS is installed |
-| `-CacheRoot` | `C:\InterSystems` | Root folder where InterSystems Caché is installed |
+| `-BsoName` | *(required)* | BSO name for the zip filename. Spaces and any characters other than letters, digits and `-` are replaced with `_`. |
+| `-BsoCode` | *(required)* | BSO code for the zip filename. Letters and digits only. |
+| `-NbssDrive` | `C` | Drive letter where the `NBSS` folder is |
+| `-InterSystemsDrive` | `C` | Drive letter where the `InterSystems` folder is |
 
 ### Usage
 
 ```powershell
-.\create_nbss_back_up.ps1 -BsoCode "<bso_code>"
+.\create_nbss_zip.ps1 -BsoName "<bso_name>" -BsoCode "<bso_code>"
 ```
 
-If NBSS or InterSystems are installed on a different drive:
+If NBSS and InterSystems are on other drives, for example `D:\NBSS` and `E:\InterSystems`:
 
 ```powershell
-.\create_nbss_back_up.ps1 -BsoCode "<bso_code>" -NbssRoot "D:\NBSS" -CacheRoot "E:\InterSystems"
+.\create_nbss_zip.ps1 -BsoName "<bso_name>" -BsoCode "<bso_code>" -NbssDrive "D" -InterSystemsDrive "E"
 ```
 
 Example output:
 
 ```output
-[14:30:15] NBSS root   : C:\NBSS
-[14:30:15] Cache root  : C:\InterSystems
-[14:30:15] Stopping Cache...
-[14:30:20] Cache stopped.
-[14:30:20] Creating zip: C:\path\to\extraction\20260707-A0001344.zip
-[14:30:45] Added: C:\NBSS\Attachments
-[14:30:50] Added: Cache/mgr/CACHE.DAT (2500.5 MB)
-[14:31:00] Added: Cache/mgr/BACKUP_CACHE.DAT (1200.3 MB)
-[14:31:05] Backup complete: C:\path\to\extraction\20260707-A0001344.zip (3700.80 MB)
-[14:31:10] Restarting Cache...
-[14:31:15] Cache restarted successfully.
+Searching for BACKUP*.DAT files in C:\NBSS and C:\InterSystems ...
+   C:\NBSS\Cache\LIV_APP\BACKUP_CACHE.DAT (27/10/2026 02:00:12)
+   C:\NBSS\Cache\LIV_DAT\BACKUP_CACHE.DAT (27/10/2026 02:05:40)
+Found 1520 file(s) in C:\NBSS\Attachments.
+Found 310 file(s) in C:\NBSS\Letters.
+Found 42 file(s) in C:\NBSS\Labels.
+WARNING: Folder not found, skipping: C:\NBSS\Reports
+Creating C:\path\to\extraction\2026-10-29-West_of_London-A0001344.zip ...
+Created C:\path\to\extraction\2026-10-29-West_of_London-A0001344.zip (3.61 GB, 1874 files).
 ```
 
 ### Notes
 
-- Caché will be unavailable while the zip is being created (usually a few minutes, depending on database size).
-- If a zip with the same name already exists, the script fails, so delete or rename the existing zip first. Caché is still restarted.
-- If Caché cannot be restarted, the script ends with an error. Start Caché manually.
+- If a zip with the same name already exists, the script fails. Delete or rename the existing zip first.
+- If the script fails while creating the zip, the incomplete zip is deleted.
 
 ---
 
@@ -186,9 +183,9 @@ Run from an Administrator PowerShell window after [downloading the scripts](#dow
 
 ```powershell
 # 1. Zip the backup files
-.\create_nbss_back_up.ps1 -BsoCode "<bso_code>"
+.\create_nbss_zip.ps1 -BsoName "<bso_name>" -BsoCode "<bso_code>"
 
 # 2. Install tools (first time only) and upload
 .\install_tools.ps1
-.\run_azcopy.ps1 -LocalFilePath ".\<YYYYMMDD>-<bso_code>.zip" -TenantId "<tenant_id>" -SubscriptionId "<subscription_id>" -StorageAccountName "<storage_account>" -ContainerName "<container_name>"
+.\run_azcopy.ps1 -LocalFilePath ".\<YYYY-MM-DD>-<bso_name>-<bso_code>.zip" -TenantId "<tenant_id>" -SubscriptionId "<subscription_id>" -StorageAccountName "<storage_account>" -ContainerName "<container_name>"
 ```
