@@ -49,12 +49,11 @@ terraform-plan: terraform-init # Plan Terraform changes - make <env> terraform-p
 
 terraform-apply: terraform-init # Apply Terraform changes - make <env> terraform-apply DOCKER_IMAGE_TAG=abcd123
 	terraform -chdir=infrastructure/terraform apply -var-file ../environments/${ENV_CONFIG}/variables.tfvars ${AUTO_APPROVE}
-	$(MAKE) defender-scan-function-deploy
 
 terraform-destroy: terraform-init # Destroy Terraform resources - make <env> terraform-destroy
 	terraform -chdir=infrastructure/terraform destroy -var-file ../environments/${ENV_CONFIG}/variables.tfvars ${AUTO_APPROVE}
 
-defender-scan-function-deploy: # Package and deploy the Defender scan Function App (requires private network access to its SCM endpoint)
+defender-scan-function-deploy: terraform-apply # Package and deploy the Defender scan Function App (requires private network access to its SCM endpoint)
 	function_app_name=$$(terraform -chdir=infrastructure/terraform output -raw defender_scan_function_app_name)
 	temp_dir=$$(mktemp -d)
 	trap 'rm -rf "$$temp_dir"' EXIT
