@@ -7,9 +7,26 @@ on:
     branches:
       - "**"
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, synchronize]
 
 jobs:
+  defender-scan-unit-tests:
+    name: "Defender scan unit tests"
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: "Checkout code"
+        uses: actions/checkout@v7
+      - name: "Set up Python"
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12"
+      - name: "Install Function dependencies"
+        run: python -m pip install pytest -r functions/defender_scan/requirements.txt
+      - name: "Run Defender scan unit tests"
+        run: python -m pytest functions/defender_scan/tests/
+
   metadata:
     name: "Set CI/CD metadata"
     runs-on: ubuntu-latest
