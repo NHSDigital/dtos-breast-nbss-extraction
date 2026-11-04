@@ -33,12 +33,12 @@ resource "azurerm_storage_account" "defender_scan_function" {
   infrastructure_encryption_enabled = true
   min_tls_version                   = "TLS1_2"
 
-  public_network_access_enabled = true
   shared_access_key_enabled     = true
 
   network_rules {
-    default_action = "Deny"
-    bypass         = ["AzureServices"]
+    default_action             = "Deny"
+    bypass                     = ["AzureServices"]
+    virtual_network_subnet_ids = [azurerm_subnet.defender_scan_vnet_integration.id]
   }
 }
 

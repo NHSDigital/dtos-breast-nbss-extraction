@@ -72,9 +72,10 @@ resource "azurerm_storage_account" "upload_accounts" {
     for_each = length(each.value.ipAddresses) > 0 ? [each.value.ipAddresses] : []
 
     content {
-      default_action = "Deny"
-      bypass         = ["AzureServices"]
-      ip_rules       = network_rules.value
+      default_action             = "Deny"
+      bypass                     = ["AzureServices"]
+      ip_rules                   = network_rules.value
+      virtual_network_subnet_ids = [azurerm_subnet.defender_scan_vnet_integration.id]
     }
   }
 

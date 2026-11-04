@@ -4,6 +4,8 @@ import os
 from urllib.parse import unquote, urlparse
 
 import azure.functions as func
+from azure.core import MatchConditions
+from azure.core.exceptions import ResourceModifiedError
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobClient, BlobServiceClient
 
@@ -32,9 +34,13 @@ def _blob_path_from_uri(blob_uri: str) -> tuple[str, str, str]:
 
 def _move_blob(
     source_blob_uri: str,
+    expected_etag: str,
     destination_account_name: str,
     destination_container_name: str,
 ) -> None:
+    source_account_name, source_container_name, blob_name = _blob_path_from_uri(
+        source_blob_uri
+    )
     credential = DefaultAzureCredential()
     source_blob = BlobClient.from_blob_url(source_blob_uri, credential=credential)
 
@@ -42,25 +48,50 @@ def _move_blob(
         logging.error("Source blob does not exist: %s", source_blob_uri)
         return
 
+    try:
+        download = source_blob.download_blob(
+            etag=expected_etag,
+            match_condition=MatchConditions.IfNotModified,
+        )
+    except ResourceModifiedError:
+        logging.warning(
+            "Source blob changed after scan; leaving it in place: %s",
+            source_blob_uri,
+        )
+        return
+
     destination_service = BlobServiceClient(
         account_url=f"https://{destination_account_name}.blob.core.windows.net",
         credential=credential,
     )
     destination_container = destination_service.get_container_client(destination_container_name)
-    destination_blob = destination_container.get_blob_client(source_blob.blob_name)
+    destination_blob = destination_container.get_blob_client(
+        f"{source_account_name}/{source_container_name}/{blob_name}"
+    )
 
     logging.info(
-        "Copying blob from %s to %s/%s/%s",
+        "Copying blob from %s to %s/%s/%s/%s/%s",
         source_blob_uri,
         destination_account_name,
         destination_container_name,
-        source_blob.blob_name,
+        source_account_name,
+        source_container_name,
+        blob_name,
     )
-    download = source_blob.download_blob()
     destination_blob.upload_blob(download.chunks(), overwrite=True)
 
     logging.info("Deleting source blob %s", source_blob_uri)
-    source_blob.delete_blob()
+    try:
+        source_blob.delete_blob(
+            etag=expected_etag,
+            match_condition=MatchConditions.IfNotModified,
+        )
+    except ResourceModifiedError:
+        logging.warning(
+            "Source blob changed after scan; leaving it in place: %s",
+            source_blob_uri,
+        )
+        return
     logging.info("Blob move completed")
 
 
@@ -77,9 +108,10 @@ def _process_scan_event(event: dict) -> None:
     event_data = event.get("data") or event.get("Data") or {}
     verdict = event_data.get("scanResultType")
     blob_uri = event_data.get("blobUri")
+    etag = event_data.get("eTag")
 
-    if not verdict or not blob_uri:
-        raise ValueError("Event data must include scanResultType and blobUri")
+    if not verdict or not blob_uri or not etag:
+        raise ValueError("Event data must include scanResultType, blobUri and eTag")
 
     source_account, source_container, blob_name = _blob_path_from_uri(blob_uri)
     logging.info(
@@ -95,11 +127,11 @@ def _process_scan_event(event: dict) -> None:
     quarantine_container = _required_env("QUARANTINE_CONTAINER_NAME")
 
     if verdict == MALICIOUS_VERDICT:
-        _move_blob(blob_uri, destination_account, quarantine_container)
+        _move_blob(blob_uri, etag, destination_account, quarantine_container)
         return
 
     if verdict == CLEAN_VERDICT:
-        _move_blob(blob_uri, destination_account, clean_container)
+        _move_blob(blob_uri, etag, destination_account, clean_container)
         return
 
     logging.info("No action for scan result type: %s", verdict)

@@ -7,6 +7,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import function_app
+from azure.core import MatchConditions
+from azure.core.exceptions import ResourceModifiedError
 
 
 def test_required_env_returns_configured_value(monkeypatch):
@@ -58,6 +60,7 @@ def test_move_blob_logs_and_returns_when_source_does_not_exist(caplog):
     ):
         function_app._move_blob(
             "https://sourceaccount.blob.core.windows.net/container/file.txt",
+            "scanned-etag",
             "destinationaccount",
             "quarantine",
         )
@@ -72,7 +75,6 @@ def test_move_blob_copies_then_deletes_source():
     credential = object()
     source_blob = MagicMock()
     source_blob.exists.return_value = True
-    source_blob.blob_name = "folder/file.txt"
     download = source_blob.download_blob.return_value
     destination_blob = MagicMock()
     destination_service = MagicMock()
@@ -87,6 +89,7 @@ def test_move_blob_copies_then_deletes_source():
     ):
         function_app._move_blob(
             "https://sourceaccount.blob.core.windows.net/container/folder/file.txt",
+            "scanned-etag",
             "destinationaccount",
             "clean",
         )
@@ -101,10 +104,71 @@ def test_move_blob_copies_then_deletes_source():
     )
     destination_service.get_container_client.assert_called_once_with("clean")
     destination_service.get_container_client.return_value.get_blob_client.assert_called_once_with(
-        "folder/file.txt"
+        "sourceaccount/container/folder/file.txt"
     )
     destination_blob.upload_blob.assert_called_once_with(download.chunks.return_value, overwrite=True)
-    source_blob.delete_blob.assert_called_once_with()
+    source_blob.download_blob.assert_called_once_with(
+        etag='scanned-etag',
+        match_condition=MatchConditions.IfNotModified,
+    )
+    source_blob.delete_blob.assert_called_once_with(
+        etag='scanned-etag',
+        match_condition=MatchConditions.IfNotModified,
+    )
+
+
+def test_move_blob_does_not_copy_when_source_etag_changed(caplog):
+    source_blob = MagicMock()
+    source_blob.exists.return_value = True
+    source_blob.download_blob.side_effect = ResourceModifiedError("ETag mismatch")
+
+    with (
+        patch.object(function_app, "DefaultAzureCredential"),
+        patch.object(function_app.BlobClient, "from_blob_url", return_value=source_blob),
+        patch.object(function_app, "BlobServiceClient") as blob_service,
+        caplog.at_level("WARNING"),
+    ):
+        function_app._move_blob(
+            "https://sourceaccount.blob.core.windows.net/container/file.txt",
+            '"scanned-etag"',
+            "destinationaccount",
+            "clean",
+        )
+
+    assert "Source blob changed after scan" in caplog.text
+    blob_service.assert_not_called()
+    source_blob.delete_blob.assert_not_called()
+
+
+def test_move_blob_leaves_replacement_source_when_etag_changes_before_delete(caplog):
+    source_blob = MagicMock()
+    source_blob.exists.return_value = True
+    source_blob.delete_blob.side_effect = ResourceModifiedError("ETag mismatch")
+    destination_blob = MagicMock()
+    destination_service = MagicMock()
+    destination_service.get_container_client.return_value.get_blob_client.return_value = (
+        destination_blob
+    )
+
+    with (
+        patch.object(function_app, "DefaultAzureCredential"),
+        patch.object(function_app.BlobClient, "from_blob_url", return_value=source_blob),
+        patch.object(function_app, "BlobServiceClient", return_value=destination_service),
+        caplog.at_level("WARNING"),
+    ):
+        function_app._move_blob(
+            "https://sourceaccount.blob.core.windows.net/container/file.txt",
+            '"scanned-etag"',
+            "destinationaccount",
+            "clean",
+        )
+
+    assert "Source blob changed after scan" in caplog.text
+    destination_blob.upload_blob.assert_called_once()
+    source_blob.delete_blob.assert_called_once_with(
+        etag='"scanned-etag"',
+        match_condition=MatchConditions.IfNotModified,
+    )
 
 
 @pytest.fixture
@@ -125,13 +189,19 @@ def test_process_scan_event_uses_legacy_event_and_data_keys(scan_settings):
     blob_uri = "https://sourceaccount.blob.core.windows.net/uploads/file.txt"
     event = {
         "EventType": function_app.ANTIMALWARE_SCAN_EVENT_TYPE,
-        "Data": {"scanResultType": function_app.MALICIOUS_VERDICT, "blobUri": blob_uri},
+        "Data": {
+            "scanResultType": function_app.MALICIOUS_VERDICT,
+            "blobUri": blob_uri,
+            "eTag": '"scanned-etag"',
+        },
     }
 
     with patch.object(function_app, "_move_blob") as move_blob:
         function_app._process_scan_event(event)
 
-    move_blob.assert_called_once_with(blob_uri, "defenderaccount", "quarantine-scans")
+    move_blob.assert_called_once_with(
+        blob_uri, '"scanned-etag"', "defenderaccount", "quarantine-scans"
+    )
 
 
 @pytest.mark.parametrize(
@@ -139,12 +209,18 @@ def test_process_scan_event_uses_legacy_event_and_data_keys(scan_settings):
     [
         {},
         {"scanResultType": function_app.CLEAN_VERDICT},
+        {
+            "scanResultType": function_app.CLEAN_VERDICT,
+            "blobUri": "https://sourceaccount.blob.core.windows.net/uploads/file.txt",
+        },
     ],
 )
-def test_process_scan_event_rejects_missing_verdict_or_blob_uri(event_data):
+def test_process_scan_event_rejects_missing_verdict_blob_uri_or_etag(event_data):
     event = {"eventType": function_app.ANTIMALWARE_SCAN_EVENT_TYPE, "data": event_data}
 
-    with pytest.raises(ValueError, match="Event data must include scanResultType and blobUri"):
+    with pytest.raises(
+        ValueError, match="Event data must include scanResultType, blobUri and eTag"
+    ):
         function_app._process_scan_event(event)
 
 
@@ -165,6 +241,7 @@ def test_process_scan_event_reports_missing_settings(
         "data": {
             "scanResultType": verdict,
             "blobUri": "https://sourceaccount.blob.core.windows.net/uploads/file.txt",
+            "eTag": "scanned-etag",
         },
     }
 
@@ -176,13 +253,19 @@ def test_process_scan_event_routes_clean_verdict(scan_settings):
     blob_uri = "https://sourceaccount.blob.core.windows.net/uploads/file.txt"
     event = {
         "eventType": function_app.ANTIMALWARE_SCAN_EVENT_TYPE,
-        "data": {"scanResultType": function_app.CLEAN_VERDICT, "blobUri": blob_uri},
+        "data": {
+            "scanResultType": function_app.CLEAN_VERDICT,
+            "blobUri": blob_uri,
+            "eTag": "scanned-etag",
+        },
     }
 
     with patch.object(function_app, "_move_blob") as move_blob:
         function_app._process_scan_event(event)
 
-    move_blob.assert_called_once_with(blob_uri, "defenderaccount", "clean-scans")
+    move_blob.assert_called_once_with(
+        blob_uri, "scanned-etag", "defenderaccount", "clean-scans"
+    )
 
 
 def test_process_scan_event_logs_unknown_verdict_without_moving_blob(
@@ -193,6 +276,7 @@ def test_process_scan_event_logs_unknown_verdict_without_moving_blob(
         "data": {
             "scanResultType": "Unknown",
             "blobUri": "https://sourceaccount.blob.core.windows.net/uploads/file.txt",
+            "eTag": "scanned-etag",
         },
     }
 

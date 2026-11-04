@@ -35,6 +35,20 @@ flowchart LR
 
 Terraform requires remote state backend resources. In this repository, bootstrap creates those resources first so later Terraform commands can run consistently.
 
+## Defender scan workflow
+
+Microsoft Defender for Storage publishes scan results to a Event Grid
+topic. Publishing and delivery use Entra ID identities with scoped Event Grid and Storage
+roles; local Event Grid authentication remains disabled. Event Grid delivers results to a
+Storage Queue, and the private Function App processes the queue with message encoding set
+to `none`.
+
+The Function App's VNet integration subnet uses the Microsoft.Storage service endpoint.
+Storage firewall rules allow that subnet to reach the Function runtime account and upload
+accounts that have IP restrictions. When moving a blob, the Function checks the scan
+event's ETag on both download and source deletion, and prefixes destination blob names
+with the source account and container to avoid collisions.
+
 ## Using `make`
 
 The repository uses make targets to provide a single, repeatable command interface for developers and pipelines.

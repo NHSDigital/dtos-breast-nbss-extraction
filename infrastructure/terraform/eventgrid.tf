@@ -4,9 +4,6 @@ locals {
   eventgrid_dead_letter_container_name  = "eventgrid-deadletter"
 }
 
-# Defender for Storage requires a custom Event Grid topic with public network access
-# enabled so scan-result events can be published. Private-endpoint-only topics are not
-# supported for this notification path.
 resource "azurerm_eventgrid_topic" "defender_scan" {
   name                = local.defender_scan_event_grid_topic_name
   resource_group_name = azurerm_resource_group.deploy_resource_group.name
@@ -65,6 +62,14 @@ resource "azurerm_eventgrid_event_subscription" "defender_scan" {
     storage_blob_container_name = azurerm_storage_container.eventgrid_dead_letter.name
   }
 
+  delivery_identity {
+    type = "SystemAssigned"
+  }
+
+  dead_letter_identity {
+    type = "SystemAssigned"
+  }
+
   retry_policy {
     max_delivery_attempts = 10
     event_time_to_live    = 1440
@@ -72,5 +77,19 @@ resource "azurerm_eventgrid_event_subscription" "defender_scan" {
 
   depends_on = [
     azurerm_role_assignment.upload_eventgrid_data_sender,
+    azurerm_role_assignment.eventgrid_queue_sender,
+    azurerm_role_assignment.eventgrid_deadletter_blob_contributor,
   ]
+}
+
+resource "azurerm_role_assignment" "eventgrid_queue_sender" {
+  scope                = azurerm_storage_account.defender_scan_function.id
+  role_definition_name = "Storage Queue Data Message Sender"
+  principal_id         = azurerm_eventgrid_topic.defender_scan.identity[0].principal_id
+}
+
+resource "azurerm_role_assignment" "eventgrid_deadletter_blob_contributor" {
+  scope                = azurerm_storage_account.defender_scan_function.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azurerm_eventgrid_topic.defender_scan.identity[0].principal_id
 }

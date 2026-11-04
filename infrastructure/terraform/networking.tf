@@ -40,6 +40,7 @@ resource "azurerm_subnet" "defender_scan_vnet_integration" {
   resource_group_name  = data.azurerm_resource_group.hub_network.name
   virtual_network_name = data.azurerm_virtual_network.hub.name
   address_prefixes     = [var.defender_scan_vnet_integration_subnet_address_prefix]
+  service_endpoints    = ["Microsoft.Storage"]
 
   delegation {
     name = "Microsoft.Web-serverFarms"
