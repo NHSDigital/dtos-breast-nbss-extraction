@@ -16,8 +16,8 @@ locals {
         ) :
         trimspace(ip)
         if trimspace(ip) != "" &&
-          lower(trimspace(ip)) != "null" &&
-          length(split(".", trimspace(ip))) == 4
+        lower(trimspace(ip)) != "null" &&
+        length(split(".", trimspace(ip))) == 4
       ])
 
       containers = [
@@ -72,9 +72,10 @@ resource "azurerm_storage_account" "upload_accounts" {
     for_each = length(each.value.ipAddresses) > 0 ? [each.value.ipAddresses] : []
 
     content {
-      default_action = "Deny"
-      bypass         = ["AzureServices"]
-      ip_rules       = network_rules.value
+      default_action             = "Deny"
+      bypass                     = ["AzureServices"]
+      ip_rules                   = network_rules.value
+      virtual_network_subnet_ids = [azurerm_subnet.defender_scan_vnet_integration.id]
     }
   }
 
@@ -86,6 +87,11 @@ resource "azurerm_storage_account" "upload_accounts" {
 
   # The intention for the storage account is to provide Shared Key access and also Entra ID authentication.
   shared_access_key_enabled = true
+
+  # Required so Defender for Storage can publish malware scan results to Event Grid.
+  identity {
+    type = "SystemAssigned"
+  }
 
   # We need to ensure that account names remain within the length limit
   # required by Azure. If the name exceeds, then we want to catch it early and provide a clear error message.

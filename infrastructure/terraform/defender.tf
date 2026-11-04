@@ -27,7 +27,8 @@ resource "azapi_update_resource" "defender_settings" {
       }
 
       malwareScanning = {
-        blobScanResultsOptions = "BlobIndexTags"
+        blobScanResultsOptions              = "BlobIndexTags"
+        scanResultsEventGridTopicResourceId = azurerm_eventgrid_topic.defender_scan.id
         onUpload = {
           isEnabled     = var.malware_scanning_on_upload_enabled && var.scan_is_enabled
           capGBPerMonth = var.malware_scanning_on_upload_cap_gb_per_month
@@ -35,6 +36,10 @@ resource "azapi_update_resource" "defender_settings" {
       }
     }
   }
+
+  depends_on = [
+    azurerm_role_assignment.upload_eventgrid_data_sender,
+  ]
 }
 
 # for the incoming function that triggers a move from the upload container to the defender storage account containers

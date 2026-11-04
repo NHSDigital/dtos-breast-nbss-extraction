@@ -24,3 +24,15 @@ output "defender_storage_account_id" {
 output "defender_storage_private_endpoint_id" {
   value = azurerm_private_endpoint.defender_storage_blob.id
 }
+
+output "defender_scan_event_grid_topic_id" {
+  value = azurerm_eventgrid_topic.defender_scan.id
+}
+
+output "defender_scan_function_app_id" {
+  value = azurerm_linux_function_app.defender_scan.id
+}
+
+output "defender_scan_function_app_name" {
+  value = azurerm_linux_function_app.defender_scan.name
+}

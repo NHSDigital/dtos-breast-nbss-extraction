@@ -26,3 +26,6 @@ lockfile
 CsessionPath
 az
 [Aa]z[Cc]opy
+[Ss]ubnet
+[Vv][Nn]et
+ETag
