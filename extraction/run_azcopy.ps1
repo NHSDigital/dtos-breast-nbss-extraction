@@ -1,10 +1,10 @@
 [CmdletBinding()]
 param(
-    [string]$StorageAccountName = "sanbssedevupload",
-    [string]$ContainerName = "uploads",
-    [string]$LocalFilePath = "",
-    [string]$TenantId,
-    [string]$SubscriptionId
+    [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$StorageAccountName,
+    [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ContainerName,
+    [Parameter(Mandatory)][ValidateScript({ Test-Path -LiteralPath $_ -PathType Leaf })][string]$LocalFilePath,
+    [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$TenantId,
+    [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$SubscriptionId
 )
 
 Set-StrictMode -Version Latest

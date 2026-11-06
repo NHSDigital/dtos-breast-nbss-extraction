@@ -2,8 +2,9 @@
 
 Run these steps on the source BSO machine to create a backup zip of an NBSS instance and upload it to Azure Storage. Follow them in order:
 
-1. [Zip the backup files](#1-zip-the-backup-files)
-2. [Transfer the zip file to Azure Storage](#2-transfer-the-zip-file-to-azure-storage)
+1. [Install tools](#1-install-tools)
+2. [Zip the backup files](#2-zip-the-backup-files)
+3. [Upload the zip](#3-upload-the-zip)
 
 > [!IMPORTANT]
 > Open PowerShell **as Administrator** (right-click PowerShell > **Run as administrator**) before running any of the commands below. Administrator rights are needed to install Azure CLI and AzCopy.
@@ -19,6 +20,7 @@ Run these steps on the source BSO machine to create a backup zip of an NBSS inst
 - **Administrator privileges** on the Windows machine
 - A **Microsoft Entra account** with create/write permission on the target storage account
 - **Outbound IP whitelisted** on the NHSE Strategic Tenant storage account
+- **Outbound HTTPS access** from the machine to `raw.githubusercontent.com` (scripts), `azcliprod.blob.core.windows.net` (Azure CLI), `github.com` and `*.githubusercontent.com` (AzCopy), `login.microsoftonline.com` and `management.azure.com` (sign-in and subscription selection), and `<storage_account>.blob.core.windows.net` (upload). Whitelisting the IP on the storage account doesn't open these.
 
 ### Other
 
@@ -36,6 +38,8 @@ Gather these values before starting. They are referenced as `<variable_name>` th
 | `<storage_account>` | Azure Storage Account name to upload to | `sanbssedevupload` |
 | `<container_name>` | Blob container within the storage account | `uploads` |
 | `<tenant_id>` | Microsoft Entra tenant ID associated with the storage account (not the subscription ID) | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` |
+| `<subscription_id>` | Azure subscription ID containing the storage account | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` |
+| `<zip_path>` | Path to the zip created in step 2, printed by `create_nbss_zip.ps1` as `Created <path> ...` | `.\2026-11-05-BsoName-XXX.zip` |
 
 ## Download the scripts
 
@@ -60,13 +64,11 @@ foreach ($f in $files) {
 Set-Location $dest
 ```
 
-`Set-ExecutionPolicy -Scope Process` only applies to the current PowerShell window. If you open a new window, `cd` back to the `extraction` folder and run it again.
-
 This creates an `extraction` folder in the current directory, laid out as follows:
 
 ```text
 extraction\
-├── <YYYY-MM-DD>-<bso_name>-<bso_code>.zip   <- created by step 1
+├── <YYYY-MM-DD>-<bso_name>-<bso_code>.zip   <- created by step 2
 ├── create_nbss_zip.ps1
 ├── install_tools.ps1
 ├── tool_versions.json
@@ -75,7 +77,30 @@ extraction\
 
 ---
 
-## 1. Zip the backup files
+## 1. Install tools
+
+**Run from:** `extraction`
+
+```powershell
+.\install_tools.ps1
+```
+
+`install_tools.ps1` installs the versions pinned in `tool_versions.json`:
+
+- **Azure CLI**: downloads the MSI to `%TEMP%` and installs it silently
+- **AzCopy**: downloads the zip to `%TEMP%`, installs `azcopy.exe` to `C:\Program Files\AzCopy` and adds that folder to the machine `PATH`
+
+The script checks that each download carries a valid Microsoft code signature before installing it. A tool that is already on `PATH` is left as it is. If `az` or `azcopy` can't be found afterwards, open a new PowerShell window (as Administrator) and set execution policies again if required.
+
+To install AzCopy somewhere else, pass `-AzCopyInstallDir`:
+
+```powershell
+.\install_tools.ps1 -AzCopyInstallDir "D:\tools\AzCopy"
+```
+
+---
+
+## 2. Zip the backup files
 
 **Run from:** `extraction`
 
@@ -99,27 +124,7 @@ extraction\
 ### Usage
 
 ```powershell
-.\create_nbss_zip.ps1 -BsoName "<bso_name>" -BsoCode "<bso_code>"
-```
-
-If NBSS and InterSystems are on other drives, for example `D:\NBSS` and `E:\InterSystems`:
-
-```powershell
 .\create_nbss_zip.ps1 -BsoName "<bso_name>" -BsoCode "<bso_code>" -NbssDrive "D" -InterSystemsDrive "E"
-```
-
-Example output:
-
-```output
-Searching for BACKUP*.DAT files in C:\NBSS and C:\InterSystems ...
-   C:\NBSS\Cache\LIV_APP\BACKUP_CACHE.DAT (27/10/2026 02:00:12)
-   C:\NBSS\Cache\LIV_DAT\BACKUP_CACHE.DAT (27/10/2026 02:05:40)
-Found 1520 file(s) in C:\NBSS\Attachments.
-Found 310 file(s) in C:\NBSS\Letters.
-Found 42 file(s) in C:\NBSS\Labels.
-WARNING: Folder not found, skipping: C:\NBSS\Reports
-Creating C:\path\to\extraction\2026-10-29-West_of_London-A0001344.zip ...
-Created C:\path\to\extraction\2026-10-29-West_of_London-A0001344.zip (3.61 GB, 1874 files).
 ```
 
 ### Notes
@@ -129,33 +134,12 @@ Created C:\path\to\extraction\2026-10-29-West_of_London-A0001344.zip (3.61 GB, 1
 
 ---
 
-## 2. Transfer the zip file to Azure Storage
+## 3. Upload the zip
 
 **Run from:** `extraction`
 
-### Install Azure CLI and AzCopy
-
 ```powershell
-.\install_tools.ps1
-```
-
-`install_tools.ps1` installs the versions pinned in `tool_versions.json`:
-
-- **Azure CLI**: downloads the MSI to `%TEMP%` and installs it silently
-- **AzCopy**: downloads the zip to `%TEMP%`, installs `azcopy.exe` to `C:\Program Files\AzCopy` and adds that folder to the machine `PATH`
-
-The script checks that each download carries a valid Microsoft code signature before installing it. A tool that is already on `PATH` is left as it is. If `az` or `azcopy` can't be found afterwards, open a new PowerShell window (as Administrator).
-
-To install AzCopy somewhere else, pass `-AzCopyInstallDir`:
-
-```powershell
-.\install_tools.ps1 -AzCopyInstallDir "D:\tools\AzCopy"
-```
-
-### Upload the zip
-
-```powershell
-.\run_azcopy.ps1 -LocalFilePath "<target_zip_path>" -TenantId "<tenant_id>" -SubscriptionId "<subscription_id>" -StorageAccountName "<storage_account>" -ContainerName "<container_name>"
+.\run_azcopy.ps1 -LocalFilePath "<zip_path>" -TenantId "<tenant_id>" -SubscriptionId "<subscription_id>" -StorageAccountName "<storage_account>" -ContainerName "<container_name>"
 ```
 
 `run_azcopy.ps1` does the following:
@@ -165,27 +149,34 @@ To install AzCopy somewhere else, pass `-AzCopyInstallDir`:
 3. Signs in to AzCopy using those Azure CLI credentials (`azcopy login --login-type azcli`)
 4. Uploads the zip as a block blob to `https://<storage_account>.blob.core.windows.net/<container_name>` with an MD5 hash (`--put-md5`). The upload role can only create new blobs, so an existing blob with the same name is **not** overwritten and the upload fails with a 403.
 
-The script stops if sign-in, subscription selection or the upload fails.
+The script stops if a required parameter is missing, the zip file doesn't exist, or sign-in, subscription selection or the upload fails.
 
 | Parameter | Default | Description |
 | --------- | ------- | ----------- |
-| `-LocalFilePath` | *(none)* | Path to the zip created in step 1 |
-| `-TenantId` | *(none)* | Microsoft Entra tenant ID. Always supply this. |
-| `-SubscriptionId` | *(none)* | Azure subscription ID to use after sign-in. Always supply this. |
-| `-StorageAccountName` | `sanbssedevupload` | Target storage account |
-| `-ContainerName` | `uploads` | Target blob container |
+| `-LocalFilePath` | *(required)* | Path to the zip created in step 2 |
+| `-TenantId` | *(required)* | Microsoft Entra tenant ID |
+| `-SubscriptionId` | *(required)* | Azure subscription ID to use after sign-in |
+| `-StorageAccountName` | *(required)* | Target storage account |
+| `-ContainerName` | *(required)* | Target blob container |
 
 ---
 
-## Quickstart
+## Troubleshooting
 
-Run from an Administrator PowerShell window after [downloading the scripts](#download-the-scripts). Start in the `extraction` folder:
+### PowerShell policy blocks execution of scripts
 
-```powershell
-# 1. Zip the backup files
-.\create_nbss_zip.ps1 -BsoName "<bso_name>" -BsoCode "<bso_code>"
+If there is a PowerShell policy that blocks the execution of the scripts downloaded from the repo, (for example you may see `running scripts is disabled on this system`) the following command may resolve this:
 
-# 2. Install tools (first time only) and upload
-.\install_tools.ps1
-.\run_azcopy.ps1 -LocalFilePath ".\<YYYY-MM-DD>-<bso_name>-<bso_code>.zip" -TenantId "<tenant_id>" -SubscriptionId "<subscription_id>" -StorageAccountName "<storage_account>" -ContainerName "<container_name>"
-```
+`Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process`
+
+If the script is still blocked, use `Unrestricted` instead — still scoped to the current process only:
+
+`Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process`
+
+Note: these commands apply only to the current PowerShell window. If you open a new window, `cd` back to the `extraction` folder and run again.
+
+If scripts are still blocked, check which scope sets the policy:
+
+`Get-ExecutionPolicy -List`
+
+If `MachinePolicy` or `UserPolicy` is set (anything other than `Undefined`), the policy comes from Group Policy and overrides the `Process` scope, so the commands above have no effect. Contact your IT administrator to allow the scripts to run.
