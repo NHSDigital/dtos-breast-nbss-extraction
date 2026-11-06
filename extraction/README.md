@@ -20,7 +20,7 @@ Run these steps on the source BSO machine to create a backup zip of an NBSS inst
 - **Administrator privileges** on the Windows machine
 - A **Microsoft Entra account** with create/write permission on the target storage account
 - **Outbound IP whitelisted** on the NHSE Strategic Tenant storage account
-- **Outbound HTTPS access** to `raw.githubusercontent.com` (scripts), `azcliprod.blob.core.windows.net` (Azure CLI), `github.com` and `*.githubusercontent.com` (AzCopy), and `login.microsoftonline.com` (sign-in)
+- **Outbound HTTPS access** from the machine to `raw.githubusercontent.com` (scripts), `azcliprod.blob.core.windows.net` (Azure CLI), `github.com` and `*.githubusercontent.com` (AzCopy), `login.microsoftonline.com` and `management.azure.com` (sign-in and subscription selection), and `<storage_account>.blob.core.windows.net` (upload). Whitelisting the IP on the storage account doesn't open these.
 
 ### Other
 
@@ -169,8 +169,14 @@ If there is a PowerShell policy that blocks the execution of the scripts downloa
 
 `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process`
 
-If the script is still blocked (e.g. due to a stricter machine policy), use `Unrestricted` instead — still scoped to the current process only:
+If the script is still blocked, use `Unrestricted` instead — still scoped to the current process only:
 
 `Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process`
 
 Note: these commands apply only to the current PowerShell window. If you open a new window, `cd` back to the `extraction` folder and run again.
+
+If scripts are still blocked, check which scope sets the policy:
+
+`Get-ExecutionPolicy -List`
+
+If `MachinePolicy` or `UserPolicy` is set (anything other than `Undefined`), the policy comes from Group Policy and overrides the `Process` scope, so the commands above have no effect. Contact your IT administrator to allow the scripts to run.
