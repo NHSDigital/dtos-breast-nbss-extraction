@@ -97,3 +97,9 @@ variable "storage_blob_private_dns_zone_name" {
   type        = string
   default     = "privatelink.blob.core.windows.net"
 }
+
+variable "event_grid_private_dns_zone_name" {
+  description = "Private DNS zone name for Event Grid private endpoints"
+  type        = string
+  default     = "privatelink.eventgrid.azure.net"
+}
