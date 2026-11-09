@@ -57,11 +57,17 @@ resource "azurerm_subnet" "defender_scan_vnet_integration" {
 data "azurerm_private_dns_zone" "blob" {
   provider            = azurerm.hub
   name                = var.storage_blob_private_dns_zone_name
-  resource_group_name = "rg-hub-${var.hub}-uks-private-dns-zones"
+  resource_group_name = data.azurerm_resource_group.hub_private_dns_zones.name
 }
 
 data "azurerm_private_dns_zone" "azurewebsites" {
   provider            = azurerm.hub
   name                = var.azurewebsites_private_dns_zone_name
-  resource_group_name = "rg-hub-${var.hub}-uks-private-dns-zones"
+  resource_group_name = data.azurerm_resource_group.hub_private_dns_zones.name
+}
+
+data "azurerm_private_dns_zone" "event_grid" {
+  provider            = azurerm.hub
+  name                = var.event_grid_private_dns_zone_name
+  resource_group_name = data.azurerm_resource_group.hub_private_dns_zones.name
 }

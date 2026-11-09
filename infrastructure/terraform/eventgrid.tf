@@ -33,7 +33,7 @@ resource "azurerm_private_endpoint" "defender_scan" {
 
   private_dns_zone_group {
     name                 = var.event_grid_private_dns_zone_name
-    private_dns_zone_ids = [azurerm_private_dns_zone.event_grid.id]
+    private_dns_zone_ids = [data.azurerm_private_dns_zone.event_grid.id]
   }
 }
 
