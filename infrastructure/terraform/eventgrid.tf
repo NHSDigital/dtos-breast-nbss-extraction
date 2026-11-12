@@ -4,36 +4,53 @@ locals {
   eventgrid_dead_letter_container_name  = "eventgrid-deadletter"
 }
 
-resource "azurerm_eventgrid_topic" "defender_scan" {
-  name                = local.defender_scan_event_grid_topic_name
-  resource_group_name = azurerm_resource_group.deploy_resource_group.name
-  location            = azurerm_resource_group.deploy_resource_group.location
+# The private endpoint is created separately below because it must live in the hub
+# subscription, which the event-grid-topic module cannot target.
+module "defender_scan_event_grid_topic" {
+  source = "../modules/dtos-devops-templates/infrastructure/modules/event-grid-topic"
 
-  input_schema                  = "EventGridSchema"
+  topic_name                    = local.defender_scan_event_grid_topic_name
+  resource_group_name           = azurerm_resource_group.deploy_resource_group.name
+  location                      = azurerm_resource_group.deploy_resource_group.location
+  identity_type                 = "SystemAssigned"
   public_network_access_enabled = false
-  local_auth_enabled            = false
-
-  identity {
-    type = "SystemAssigned"
-  }
+  private_endpoint_properties   = null
 }
 
-resource "azurerm_private_endpoint" "defender_scan" {
-  name                = "${var.app_short_name}-${var.env_config}-defender-scan-pep"
-  resource_group_name = azurerm_resource_group.deploy_resource_group.name
-  location            = azurerm_resource_group.deploy_resource_group.location
-  subnet_id           = azurerm_subnet.defender_scan.id
+moved {
+  from = azurerm_eventgrid_topic.defender_scan
+  to   = module.defender_scan_event_grid_topic.azurerm_eventgrid_topic.azurerm_eventgrid
+}
 
-  private_service_connection {
-    name                           = "${var.app_short_name}-${var.env_config}-defender-scan-psc"
-    private_connection_resource_id = azurerm_eventgrid_topic.defender_scan.id
-    is_manual_connection           = false
-    subresource_names              = ["topic"]
+# The module does not output the topic's system-assigned identity, so look up its service principal.
+data "azuread_service_principal" "defender_scan_event_grid_topic" {
+  display_name = local.defender_scan_event_grid_topic_name
+
+  depends_on = [module.defender_scan_event_grid_topic]
+}
+
+module "defender_scan_event_grid_topic_private_endpoint" {
+  source = "../modules/dtos-devops-templates/infrastructure/modules/private-endpoint"
+
+  providers = {
+    azurerm = azurerm.hub
   }
 
-  private_dns_zone_group {
-    name                 = var.event_grid_private_dns_zone_name
+  name                = "${local.defender_scan_event_grid_topic_name}-azure-eventgrid-pep"
+  resource_group_name = data.azurerm_resource_group.hub_private_endpoint.name
+  location            = data.azurerm_resource_group.hub_private_endpoint.location
+  subnet_id           = data.azurerm_subnet.hub_private_endpoint.id
+
+  private_dns_zone_group = {
+    name                 = "${local.defender_scan_event_grid_topic_name}-pep-zone-group"
     private_dns_zone_ids = [data.azurerm_private_dns_zone.event_grid.id]
+  }
+
+  private_service_connection = {
+    name                           = "${local.defender_scan_event_grid_topic_name}-pep-connection"
+    private_connection_resource_id = module.defender_scan_event_grid_topic.id
+    subresource_names              = ["topic"]
+    is_manual_connection           = false
   }
 }
 
@@ -56,7 +73,7 @@ data "azurerm_storage_account" "upload_accounts_identity" {
 resource "azurerm_role_assignment" "upload_eventgrid_data_sender" {
   for_each = local.upload_accounts_map
 
-  scope                = azurerm_eventgrid_topic.defender_scan.id
+  scope                = module.defender_scan_event_grid_topic.id
   role_definition_name = "EventGrid Data Sender"
   principal_id         = data.azurerm_storage_account.upload_accounts_identity[each.key].identity[0].principal_id
 }
@@ -65,7 +82,7 @@ resource "azurerm_role_assignment" "upload_eventgrid_data_sender" {
 # (no public inbound). The Python function consumes the queue.
 resource "azurerm_eventgrid_event_subscription" "defender_scan" {
   name  = local.defender_scan_event_subscription_name
-  scope = azurerm_eventgrid_topic.defender_scan.id
+  scope = module.defender_scan_event_grid_topic.id
 
   included_event_types = [
     "Microsoft.Security.MalwareScanningResult",
@@ -104,11 +121,11 @@ resource "azurerm_eventgrid_event_subscription" "defender_scan" {
 resource "azurerm_role_assignment" "eventgrid_queue_sender" {
   scope                = azurerm_storage_account.defender_scan_function.id
   role_definition_name = "Storage Queue Data Message Sender"
-  principal_id         = azurerm_eventgrid_topic.defender_scan.identity[0].principal_id
+  principal_id         = data.azuread_service_principal.defender_scan_event_grid_topic.object_id
 }
 
 resource "azurerm_role_assignment" "eventgrid_deadletter_blob_contributor" {
   scope                = azurerm_storage_account.defender_scan_function.id
   role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = azurerm_eventgrid_topic.defender_scan.identity[0].principal_id
+  principal_id         = data.azuread_service_principal.defender_scan_event_grid_topic.object_id
 }

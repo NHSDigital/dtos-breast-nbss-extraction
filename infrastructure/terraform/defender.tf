@@ -28,7 +28,7 @@ resource "azapi_update_resource" "defender_settings" {
 
       malwareScanning = {
         blobScanResultsOptions              = "BlobIndexTags"
-        scanResultsEventGridTopicResourceId = azurerm_eventgrid_topic.defender_scan.id
+        scanResultsEventGridTopicResourceId = module.defender_scan_event_grid_topic.id
         onUpload = {
           isEnabled     = var.malware_scanning_on_upload_enabled && var.scan_is_enabled
           capGBPerMonth = var.malware_scanning_on_upload_cap_gb_per_month

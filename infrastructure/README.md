@@ -38,8 +38,11 @@ Terraform requires remote state backend resources. In this repository, bootstrap
 ## Defender scan workflow
 
 Microsoft Defender for Storage publishes scan results to a Event Grid
-topic. Publishing and delivery use Entra ID identities with scoped Event Grid and Storage
-roles; local Event Grid authentication remains disabled. Event Grid delivers results to a
+topic, created with the shared `event-grid-topic` module. The topic has public network
+access disabled and is reached through a private endpoint in the hub subscription.
+Publishing and delivery use Entra ID identities with scoped Event Grid and Storage
+roles. Local (access key) authentication is left enabled because the shared
+module does not expose that setting. Event Grid delivers results to a
 Storage Queue, and the private Function App processes the queue with message encoding set
 to `none`.
 

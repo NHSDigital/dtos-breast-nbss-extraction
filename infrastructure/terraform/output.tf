@@ -26,7 +26,7 @@ output "defender_storage_private_endpoint_id" {
 }
 
 output "defender_scan_event_grid_topic_id" {
-  value = azurerm_eventgrid_topic.defender_scan.id
+  value = module.defender_scan_event_grid_topic.id
 }
 
 output "defender_scan_function_app_id" {
