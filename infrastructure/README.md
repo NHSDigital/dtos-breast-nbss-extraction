@@ -209,6 +209,25 @@ make dev terraform-apply
 
 ---
 
+## Spoke networking
+
+[Terraform networking](terraform/networking.tf) connects the NBSS spoke VNet to
+`VNET-<HUB>-UKS-HUB` in `rg-hub-<hub>-uks-hub-networking`. It creates peering in
+both directions with virtual network access and forwarded traffic enabled.
+Gateway transit and remote gateway usage remain disabled.
+
+The spoke uses the inbound endpoint of `<hub>-uks-hub-private-dns-zone-resolver`
+in `rg-hub-<hub>-uks-private-dns-zones` as its DNS server. The hub must already
+have the `private-dns-resolver-inbound-endpoint` endpoint and the Blob private
+DNS zone linked to the resolver's VNet. The existing Blob private endpoint
+registers its records in that shared zone.
+
+The deployment identity needs permission to read the hub DNS resources and
+manage peerings on both VNets. Before applying, confirm that the spoke address
+space (`10.210.0.0/16`) does not overlap the hub or any networks that must
+communicate with the spoke. No additional workload subnets or routing resources
+are created by this peering configuration.
+
 ## Troubleshooting
 
 **WSL error: `env: bash\r not found`**

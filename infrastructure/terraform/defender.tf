@@ -72,11 +72,10 @@ resource "azurerm_storage_container" "defender_containers" {
 }
 
 resource "azurerm_private_endpoint" "defender_storage_blob" {
-  provider            = azurerm.hub
   name                = "${local.defender_upload_storage_account_name}-pep"
-  location            = data.azurerm_resource_group.hub_private_endpoint.location
-  resource_group_name = data.azurerm_resource_group.hub_private_endpoint.name
-  subnet_id           = data.azurerm_subnet.hub_private_endpoint.id
+  location            = azurerm_resource_group.deploy_resource_group.location
+  resource_group_name = azurerm_resource_group.deploy_resource_group.name
+  subnet_id           = module.nbss_private_endpoint_subnet.id
 
   private_service_connection {
     name                           = "${local.defender_upload_storage_account_name}-blob"
