@@ -1,0 +1,12 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "AzureWebJobsFeatureFlags": "EnableWorkerIndexing",
+    "DEFENDER_STORAGE_ACCOUNT_NAME": "replace-with-defender-storage-account",
+    "CLEAN_CONTAINER_NAME": "clean-scans",
+    "QUARANTINE_CONTAINER_NAME": "quarantine-scans",
+    "DEFENDER_SCAN_RESULTS_QUEUE": "defender-scan-results"
+  }
+}

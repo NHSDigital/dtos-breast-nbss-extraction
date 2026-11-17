@@ -1,5 +1,5 @@
-.SILENT: terraform-init terraform-plan terraform-apply terraform-destroy terraform-fmt terraform-validate
-.PHONY: terraform-init terraform-plan terraform-apply terraform-destroy terraform-fmt terraform-validate
+.SILENT: terraform-init terraform-plan terraform-apply terraform-destroy terraform-fmt terraform-validate defender-scan-function-deploy
+.PHONY: terraform-init terraform-plan terraform-apply terraform-destroy terraform-fmt terraform-validate defender-scan-function-deploy
 
 ENV ?= dev
 ENV_CONFIG ?= $(ENV)
@@ -52,6 +52,18 @@ terraform-apply: terraform-init # Apply Terraform changes - make <env> terraform
 
 terraform-destroy: terraform-init # Destroy Terraform resources - make <env> terraform-destroy
 	terraform -chdir=infrastructure/terraform destroy -var-file ../environments/${ENV_CONFIG}/variables.tfvars ${AUTO_APPROVE}
+
+defender-scan-function-deploy: terraform-apply # Package and deploy the Defender scan Function App (requires private network access to its SCM endpoint)
+	function_app_name=$$(terraform -chdir=infrastructure/terraform output -raw defender_scan_function_app_name)
+	temp_dir=$$(mktemp -d)
+	trap 'rm -rf "$$temp_dir"' EXIT
+	(cd functions/defender_scan && zip -qr "$$temp_dir/defender-scan-function.zip" . \
+		-x 'local.settings.json' '__pycache__/' '__pycache__/*' '*.pyc' '.venv/' '.venv/*' '.git*' '.vscode/*' 'test/*' '.python_packages/*')
+	az functionapp deployment source config-zip \
+		--resource-group "rg-${APP_SHORT_NAME}-${ENV_CONFIG}-uks" \
+		--name "$$function_app_name" \
+		--src "$$temp_dir/defender-scan-function.zip" \
+		--build-remote true
 
 terraform-validate: # Validate Terraform changes - make <env> terraform-validate
 	terraform -chdir=$(TF_DIR) validate

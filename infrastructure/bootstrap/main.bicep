@@ -56,8 +56,8 @@ module terraformStoragePrivateEndpoint 'privateEndpoint.bicep' = {
     region: region
     name: storageAccountName
     resourceServiceType: 'storage'
-    resourceID: terraformStateStorageAccount.outputs.storageAccountID
-    privateDNSZoneID: terraformStoragePrivateDnsZone.outputs.privateDNSZoneID
+    resourceId: terraformStateStorageAccount.outputs.storageAccountID
+    privateDnsZoneId: terraformStoragePrivateDnsZone.outputs.privateDNSZoneID
   }
 }
 
@@ -68,5 +68,5 @@ resource infraRG 'Microsoft.Resources/resourceGroups@2024-11-01' = {
 
 output storageAccountId string = terraformStateStorageAccount.outputs.storageAccountID
 output storagePrivateDNSZoneId string = terraformStoragePrivateDnsZone.outputs.privateDNSZoneID
-output storagePrivateEndpointId string = terraformStoragePrivateEndpoint.outputs.privateEndpointID
+output storagePrivateEndpointId string = terraformStoragePrivateEndpoint.outputs.privateEndpointId
 output infraResourceGroupId string = infraRG.id
