@@ -180,3 +180,15 @@ If scripts are still blocked, check which scope sets the policy:
 `Get-ExecutionPolicy -List`
 
 If `MachinePolicy` or `UserPolicy` is set (anything other than `Undefined`), the policy comes from Group Policy and overrides the `Process` scope, so the commands above have no effect. Contact your IT administrator to allow the scripts to run.
+
+### Azure CLI install fails with exit code 1625
+
+If `install_tools.ps1` stops with `Azure CLI MSI install failed with exit code 1625.`, Windows Installer refused to run the Azure CLI MSI. Exit code 1625 means "This installation is forbidden by system policy". The script is working, but the machine's security policy is blocking the MSI. Common causes are:
+
+- a Group Policy that turns off Windows Installer
+- AppLocker or Windows Defender Application Control (WDAC) rules that block MSIs
+- a policy that only allows software to be installed through the organisation's own software deployment tool
+
+Install Azure CLI manually instead, following [Install Azure CLI on Windows](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-windows?view=azure-cli-latest&pivots=msi). If possible, install the version pinned in `tool_versions.json`. If a manual install is also blocked, ask your IT administrator to install Azure CLI for you.
+
+When Azure CLI is installed, open a new PowerShell window (as Administrator) and run `.\install_tools.ps1` again. The script finds `az` on `PATH`, leaves Azure CLI as it is and installs only AzCopy.
