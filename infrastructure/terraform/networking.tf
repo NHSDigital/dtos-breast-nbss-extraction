@@ -38,7 +38,7 @@ module "nbss_log_analytics_workspace" {
   resource_group_name = azurerm_resource_group.deploy_resource_group.name
   location            = local.region
   law_sku             = "PerGB2018"
-  retention_days      = 30
+  retention_days      = var.log_analytics_retention_days
 
   monitor_diagnostic_setting_log_analytics_workspace_enabled_logs = ["Audit"]
   monitor_diagnostic_setting_log_analytics_workspace_metrics      = ["AllMetrics"]
@@ -50,7 +50,7 @@ module "nbss_vnet" {
   name                = module.shared_config.names["virtual-network"]
   resource_group_name = azurerm_resource_group.deploy_resource_group.name
   location            = local.region
-  vnet_address_space  = "10.210.0.0/16"
+  vnet_address_space  = var.nbss_vnet_address
   dns_servers         = [data.azurerm_private_dns_resolver_inbound_endpoint.hub.ip_configurations[0].private_ip_address]
 
   log_analytics_workspace_id                   = module.nbss_log_analytics_workspace.id
@@ -97,7 +97,7 @@ module "nbss_private_endpoint_subnet" {
   resource_group_name = azurerm_resource_group.deploy_resource_group.name
   location            = local.region
   vnet_name           = module.nbss_vnet.name
-  address_prefixes    = ["10.210.5.0/24"]
+  address_prefixes    = var.pep_subnet_address
 
   create_nsg                                                     = false
   network_security_group_name                                    = module.shared_config.names["network-security-group"]
