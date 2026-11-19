@@ -92,6 +92,40 @@ docker-compose down
 
 ## Prerequisites
 
+### ⚠️ IMPORTANT: IRIS.DAT Backup File Required
+
+**Before you proceed, you MUST have an `IRIS.DAT` backup file.**
+
+This is a database file containing your IRIS data. Without it, the container will start but have no data.
+
+#### Where to Get IRIS.DAT
+
+- Get it from your team lead or DevOps engineer
+- Export from an existing IRIS installation
+- Or download from your backup storage
+
+#### How to Add IRIS.DAT to backup_destination
+
+```bash
+# 1. Place your IRIS.DAT file in the correct folder structure:
+mkdir -p backup_destination/alpha-1/usr/irissys/mgr/user/
+
+# 2. Copy your IRIS.DAT file to this location:
+cp /path/to/your/IRIS.DAT backup_destination/alpha-1/usr/irissys/mgr/user/IRIS.DAT
+
+# 3. Verify the file exists:
+ls -lah backup_destination/alpha-1/usr/irissys/mgr/user/IRIS.DAT
+```
+
+Expected output:
+```
+-rw-r--r-- 1 user group 2.5G Nov 19 12:00 backup_destination/alpha-1/usr/irissys/mgr/user/IRIS.DAT
+```
+
+✅ **If you see the IRIS.DAT file listed, you're ready to proceed!**
+
+---
+
 ### Check Docker and Docker Compose
 
 ```bash
