@@ -205,6 +205,50 @@ services:
 - Checks if IRIS is healthy
 - Auto-restarts if it crashes
 
+### Configuring Volumes for IRIS.DAT
+
+The **volumes** section is where you tell Docker to mount your IRIS.DAT backup file into the container.
+
+#### Update the volumes section
+
+Replace this:
+
+```yaml
+    volumes:
+      # Optional: uncomment to persist data between restarts
+      # - ./iris-data:/usr/irissys/mgr
+
+```
+
+With this:
+
+```yaml
+
+    volumes:
+      # Mount your IRIS.DAT backup file
+      - ./backup_destination/alpha-1/usr/irissys/mgr/user/IRIS.DAT:/usr/irissys/mgr/user/IRIS.DAT
+
+```
+
+**What this does:**
+
+- `./backup_destination/alpha-1/...` = Path on your local machine (LEFT side)
+- `:/usr/irissys/mgr/user/IRIS.DAT` = Path inside the Docker container (RIGHT side)
+- This makes your IRIS.DAT file accessible to IRIS inside the container
+
+---
+
+#### To Use a Different Backup
+
+If you want to use `alpha-2` instead of `alpha-1`:
+
+```yaml
+    volumes:
+      - ./backup_destination/alpha-2/usr/irissys/mgr/user/IRIS.DAT:/usr/irissys/mgr/user/IRIS.DAT
+```
+
+✅ **Make sure the volume path matches your IRIS.DAT location!**
+
 ---
 
 ## Step 2: Create .env File
