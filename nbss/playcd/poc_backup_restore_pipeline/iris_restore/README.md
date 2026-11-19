@@ -118,7 +118,8 @@ ls -lah backup_destination/alpha-1/usr/irissys/mgr/user/IRIS.DAT
 ```
 
 Expected output:
-```
+
+```output
 -rw-r--r-- 1 user group 2.5G Nov 19 12:00 backup_destination/alpha-1/usr/irissys/mgr/user/IRIS.DAT
 ```
 
