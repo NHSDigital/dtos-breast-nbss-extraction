@@ -69,3 +69,19 @@ variable "storage_blob_private_dns_zone_name" {
   type        = string
   default     = "privatelink.blob.core.windows.net"
 }
+
+variable "nbss_vnet_address" {
+  type = string
+  description = "Address space for the NBSS spoke virtual network"
+}
+
+variable "pep_subnet_address" {
+  type = list(string)
+  description = "Address prefixes for the Private Endpoint subnet"
+}
+
+variable "log_analytics_retention_days" {
+  description = "Retention days for the Log Analytics workspace"
+  type        = number
+  default     = 30
+}
