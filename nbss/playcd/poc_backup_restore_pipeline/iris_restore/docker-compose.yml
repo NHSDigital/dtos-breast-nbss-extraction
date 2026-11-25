@@ -10,7 +10,8 @@ services:
       - IRIS_PASSWORD=${IRIS_PASSWORD}
     volumes:
       # Optional: uncomment to persist data between restarts
-      # - Example ./backup_destination/alpha-1/usr/irissys/mgr/user/IRIS.DAT:/usr/irissys/mgr/user/IRIS.DAT    healthcheck:
+      - ./backup_destination/alpha-1/usr/irissys/mgr/user/IRIS.DAT:/usr/irissys/mgr/user/IRIS.DAT
+    healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:52773/csp/sys/UtilHome.csp"]
       interval: 10s
       timeout: 5s
