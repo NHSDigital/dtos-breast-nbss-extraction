@@ -1,0 +1,7 @@
+ENV_CONFIG=prod
+ENVIRONMENT=prod
+AZURE_SUBSCRIPTION="Breast Screening - NBSS Extraction - Prod"
+HUB_SUBSCRIPTION="Digital Screening DToS - DevOps"
+ENABLE_SOFT_DELETE=false
+TERRAFORM_MODULES_REF=main
+HUB=prod
